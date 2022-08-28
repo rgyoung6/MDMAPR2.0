@@ -146,8 +146,6 @@ std_metadata_file_validation_msgs <- function(meta_file){
 #Function runs validation tests on user uploaded standard curve file.
 
 user_uploaded_standard_curve_file_validation <- function(standard_curve, metadata_file, platform_type){
-  print("inside std. curve valid from main data import")
-  print(platform_type)
   if (is.null(standard_curve) | is.null(metadata_file))
   {print("no files")
     return(TRUE)}

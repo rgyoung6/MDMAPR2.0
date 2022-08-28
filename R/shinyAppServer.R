@@ -85,6 +85,7 @@ shinyAppServer <- function(input, output, session) {
   source('./R/server/file_validation_helpers.R')
   source('./R/server/threshold_calc_helpers.R')
   source('./R/server/qPCR_overview_helpers.R')
+
   #Function that is opposite on 'is in' function
   '%ni%' <- Negate('%in%')
 
@@ -246,7 +247,7 @@ shinyAppServer <- function(input, output, session) {
   ############ Data Processing Upon Hitting Submit ##########
 
   #initalize uploaded_data reactive variable
-  uploaded_data <- reactiveVal(value = read.csv("./mergedTable.csv"))
+  uploaded_data <- reactiveVal(value = NULL)
 
   observeEvent(input$submit, {
     output$dataexport <- renderDataTable({
@@ -277,8 +278,6 @@ shinyAppServer <- function(input, output, session) {
   })
 
   observeEvent(input$submit, {
-
-    print("Coming here 2?")
 
     valid_files <- TRUE
 
@@ -388,7 +387,7 @@ shinyAppServer <- function(input, output, session) {
           for (target in (1:length(raw_data_with_Cq))){
             copy_numbers[[target]] <- calculate_copy_number(std_w_threshold, raw_data_with_Cq[[target]])
           }
-          #copy_numbers <- calculate_copy_number(std_w_threshold, raw_data_with_Cq[[1]])
+          copy_numbers <- calculate_copy_number(std_w_threshold, raw_data_with_Cq[[1]])
 
         }
         # 11. Merge all the data
@@ -456,8 +455,6 @@ shinyAppServer <- function(input, output, session) {
   })
 
   observeEvent(input$submit_add, {
-
-    print("Coming here 2?")
 
     valid_files <- TRUE
 
@@ -1192,7 +1189,7 @@ shinyAppServer <- function(input, output, session) {
                std_metadata_file_validation_msgs(input$SC_metadata_file))
 
 
-  standard_curve_tab_data <- reactiveVal(value = read.csv("./curve.csv"))
+  standard_curve_tab_data <- reactiveVal(value = NULL)
 
   observeEvent(input$Uploaded_SC_submit, {
     isolate(
@@ -1346,8 +1343,6 @@ shinyAppServer <- function(input, output, session) {
       #Add column with residual values to data set
       regression_line <- lm(as.numeric(systemCalculatedCqValue) ~ as.numeric(standardConc), SC_plot_data)
       SC_plot_data$Residual <- abs(residuals(regression_line))
-      print(SC_plot_data$standardConc)
-      print(SC_plot_data$systemCalculatedCqValue)
 
       #Code to get R squared
       #Adapted from: https://stackoverflow.com/questions/7549694/add-regression-line-equation-and-r2-on-graph
@@ -1639,7 +1634,6 @@ shinyAppServer <- function(input, output, session) {
       MElamhat <- 1.96*sdlamhat  #margin of error for lambda hat using delta method
     }
     )
-    print("got here")
     ## All Targets and Labs **DO NOT DUPLICATE Target names over Labs!!
     uLabs <- unique(DAT.Tar.SQ$Lab)
     uTargets <- unique(DAT.Tar.SQ$Target)
@@ -1733,25 +1727,25 @@ shinyAppServer <- function(input, output, session) {
 
 
   #Update machine based on assay selection
-  DA_runPlatform_list <- reactive({
-
-    if (input$DA_assay_input != 'None') {
-
-      data <- as.data.frame(uploaded_data())
-
-      updated_list <- data[data$assayName == input$DA_assay_input, ]
-
-      runPlatform_list <-  as.character(unique(updated_list$runPlatform))
-
-      return(runPlatform_list)}
-
-    else {return(NULL)}
-  })
-
-  observe({updatePickerInput(session,
-                             "DA_machine_input",
-                             choices = append('None', DA_runPlatform_list()),
-                             selected = 'None')})
+  # DA_runPlatform_list <- reactive({
+  #
+  #   if (input$DA_assay_input != 'None') {
+  #
+  #     data <- as.data.frame(uploaded_data())
+  #
+  #     updated_list <- data[data$assayName == input$DA_assay_input, ]
+  #
+  #     runPlatform_list <-  as.character(unique(updated_list$runPlatform))
+  #
+  #     return(runPlatform_list)}
+  #
+  #   else {return(NULL)}
+  # })
+  #
+  # observe({updatePickerInput(session,
+  #                            "DA_machine_input",
+  #                            choices = append('None', DA_runPlatform_list()),
+  #                            selected = 'None')})
 
 
   #Update project list based on assay selection
@@ -1782,7 +1776,7 @@ shinyAppServer <- function(input, output, session) {
 
     if (!is.null(uploaded_data())) {
 
-      data <- read.csv("./mergedTable.csv")
+      data <- uploaded_data()
       PA_filtered_data <- data[data$assayName == input$DA_assay_input, ]
       PA_filtered_data <- PA_filtered_data[PA_filtered_data$runPlatform == input$DA_machine_input, ]
       PA_filtered_data <- PA_filtered_data[PA_filtered_data$projectName == input$DA_project_input, ]
@@ -1805,10 +1799,10 @@ shinyAppServer <- function(input, output, session) {
   }
 
   # #Presence/absence table
-  observe(({
+  observeEvent(input$submit, isolate ({
 
     output$presence_absence_table <- renderReactable({
-      data <- as.data.frame(read.csv("./mergedTable.csv"))
+      data <- as.data.frame(presence_absence_table_data())
 
       prescence_abscence_table <- data[ , c("projectName", "runID", "extractName", "control", "geneSymbol", "runPlatform", "wellLocation", "userProvidedThresholdValue", "userProvidedCqValue", "systemCalculatedThresholdValue", "systemCalculatedCqValue" )]
 
@@ -1892,7 +1886,7 @@ shinyAppServer <- function(input, output, session) {
   #
   # #Created amplifcation plot based on selected well sample
   #
-  observe(({
+  observeEvent(input$submit, isolate ({
 
     output$selected <-  renderPlotly({
 
@@ -2127,7 +2121,7 @@ shinyAppServer <- function(input, output, session) {
   output$cntTest <-
     renderText(paste("Test Data:", NROW(testData()), "records"))
 
-  output$Data <- renderDT(InputDataset())
+  output$Data <- DT::renderDT(InputDataset())
 
   # identify variables that are numeric for correlation matrix
   numeric_model_input <- reactive({
