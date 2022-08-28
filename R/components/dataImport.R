@@ -74,12 +74,12 @@
 #' @importFrom stats residuals
 #' @importFrom bslib is_bs_theme
 
-dataImport <- function(){
+dataImport <- function() {
   shinydashboard::tabItem(tabName = "dataImport",
                           shiny::h1(shiny::strong("Data Import")),
           shiny::fluidRow(
             shiny::column(width = 6,
-                   box(title = htmltools::span(shiny::icon("upload"), "Upload Data"), status = "info",
+                          shinydashboard::box(title = htmltools::span(shiny::icon("upload"), "Upload Data"), status = "info",
                        width = 12, solidHeader = TRUE,collapsible = T, collapsed = F,
                        #qPCR Data file upload
                        shiny::p("Upload files here if you are uploading data for the first time in MDMAPR."),
@@ -114,7 +114,7 @@ dataImport <- function(){
                                                 "Reset Files")))
                    )),# end of upload data box and column
             shiny::column(width = 6,
-                   box(title = span( icon("plus-square"), "Add Another Dataset"), collapsible = TRUE, collapsed = TRUE,
+                          shinydashboard::box(title = span( icon("plus-square"), "Add Another Dataset"), collapsible = TRUE, collapsed = TRUE,
                        status = "info", width = 12, solidHeader = TRUE,
                        #qPCR Data file upload
                        shiny::p("Upload files here if you would like to add to your dataset or progress file. Only submit files here if you've already uploaded data."),
@@ -148,7 +148,7 @@ dataImport <- function(){
                                 column(4, actionButton("reset_add",
                                                        "Reset Files")))
                    ), # end of add dataset box
-                   box(title=span( icon("save"), "Load Saved Data"), status="warning", solidHeader=TRUE, width=12,collapsible = T, collapsed = T,
+                   shinydashboard::box(title=span( icon("save"), "Load Saved Data"), status="warning", solidHeader=TRUE, width=12,collapsible = T, collapsed = T,
                        shiny::fluidRow(
                          column(12, h4(icon("database"), "Continue Previous Work"))),
                        fluidRow(column(12,
@@ -161,7 +161,7 @@ dataImport <- function(){
                                        column(4, actionButton("submit_zip",
                                                               "Submit  File"))))), # end of load data box
 
-                   box(title = span( icon("play-circle"), "Import Sample Data from MDMAPR package"),
+                   shinydashboard::box(title = span( icon("play-circle"), "Import Sample Data from MDMAPR package"),
                        collapsible = TRUE, collapsed = TRUE,
                        status = "primary", solidHeader = TRUE, width = 12,
                        fluidRow(

@@ -78,10 +78,8 @@ NULL
 
 
 welcomeComponent <- function() {
-  print("Inside welcomeComponent")
-
   shinydashboard::tabItem(tabName = "welcomepage",
-          includeHTML("components/home.html"),
+          includeHTML("R/components/home.html"),
           shiny::tags$script(src = "plugins/scripts.js"),
           shiny::tags$head(
             shiny::tags$link(rel = "stylesheet",
@@ -96,7 +94,7 @@ welcomeComponent <- function() {
               status = "primary", solidHeader = TRUE,
               width = 12,
               fluidRow(
-                shiny::column(11,fluidPage(includeMarkdown("MDMAPR_Vignettes.Rmd")))
+                shiny::column(11,fluidPage(includeMarkdown("./R/MDMAPR_Vignettes.Rmd")))
               )),
           shiny::br(),
 

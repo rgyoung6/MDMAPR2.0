@@ -77,9 +77,6 @@ NULL
 #qPCR Data Overview page ---------------------------
 
 qPCRDataOverviewComponent <- function() {
-
-  print("Inside qPCRDataOverviewComponent")
-
   shinydashboard::tabItem(tabName = "qPCRDataOverviewPage",
 
                           shiny::h1(shiny::strong("qPCR Data Overview")),

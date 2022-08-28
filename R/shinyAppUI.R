@@ -1,4 +1,4 @@
-source('./R/dashboardBodyComponent.R')
+#source('./R/dashboardBodyComponent.R')
 # Define UI for application ---------------------------
 shinyAppUI <- shinydashboard::dashboardPage(
   #Skin color of app

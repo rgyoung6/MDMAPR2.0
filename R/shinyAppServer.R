@@ -4,6 +4,7 @@
 #' @importFrom DT datatable
 #' @import leaflet
 #' @import leaflet.extras
+#' @importFrom shinydashboard box
 #' @importFrom shinyWidgets pickerInput
 #' @importFrom shinyWidgets updatePickerInput
 #' @importFrom shinyjs reset
@@ -74,7 +75,6 @@
 #' @importFrom stats residuals
 #' @importFrom bslib is_bs_theme
 NULL
-
 #' @export
 
 shinyAppServer <- function(input, output, session) {
