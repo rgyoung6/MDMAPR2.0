@@ -94,7 +94,7 @@ welcomeComponent <- function() {
               status = "primary", solidHeader = TRUE,
               width = 12,
               fluidRow(
-                shiny::column(11,fluidPage(includeMarkdown("./R/MDMAPR_Vignettes.Rmd")))
+                #shiny::column(11,fluidPage(includeMarkdown("./R/MDMAPR_Vignettes.Rmd")))
               )),
           shiny::br(),
 

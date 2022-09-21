@@ -75,7 +75,6 @@
 #' @importFrom stats residuals
 #' @importFrom bslib is_bs_theme
 NULL
-#' @export
 
 shinyAppServer <- function(input, output, session) {
 
