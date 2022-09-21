@@ -16,7 +16,7 @@ Description: Runs a Shiny web application that merges raw 'qPCR' fluorescence da
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.1
 URL: https://github.com/ayogasekaram/MDMAPR2.0
 BugReports: https://github.com/ayogasekaram/MDMAPR2.0/issues
 Suggests: 
@@ -46,4 +46,3 @@ Depends:
     shinydashboard,
     shinyWidgets,
     xfun
-
