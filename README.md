@@ -20,7 +20,7 @@ install_github("ayogasekaram/MDMAPR2.0")
 Once installed, run the following command to launch the MDMAPR App:
 
 ``` r
-launchApp()
+launchMDMAPR()
 ```
 ## Mapping Dashboard
 

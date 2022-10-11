@@ -78,12 +78,12 @@ NULL
 
 shinyAppServer <- function(input, output, session) {
 
-  source('./R/server/table_creation_helpers.R')
-  source('./R/server/standard_curve_helpers.R')
-  source('./R/server/data_processing_helpers.R')
-  source('./R/server/file_validation_helpers.R')
-  source('./R/server/threshold_calc_helpers.R')
-  source('./R/server/qPCR_overview_helpers.R')
+  source('./R/table_creation_helpers.R')
+  source('./R/standard_curve_helpers.R')
+  source('./R/data_processing_helpers.R')
+  source('./R/file_validation_helpers.R')
+  source('./R/threshold_calc_helpers.R')
+  source('./R/qPCR_overview_helpers.R')
 
   #Function that is opposite on 'is in' function
   '%ni%' <- Negate('%in%')

@@ -1,18 +1,18 @@
-#' @name launchApp
+#' @name launchMDMAPR
 #'
 #' @title Launch the MDMAPR app.
 #'
 #' @description This function runs the MDMAPR Shiny web application.
 #'
-#' @export launchApp
+#' @export launchMDMAPR
 #'
 #' @return shiny application object
 #'
-#' @usage launchApp()
+#' @usage launchMDMAPR()
 #'
 
 
 # wrapper for shiny::shinyApp()
-launchApp <- function() {
+launchMDMAPR <- function() {
   shinyApp(ui = shinyAppUI, server = shinyAppServer)
 }
