@@ -76,12 +76,12 @@
 #' @importFrom bslib is_bs_theme
 NULL
 
-source('table_creation_helpers.R')
-source('standard_curve_helpers.R')
-source('data_processing_helpers.R')
-source('file_validation_helpers.R')
-source('threshold_calc_helpers.R')
-source('qPCR_overview_helpers.R')
+source('./table_creation_helpers.R')
+source('./standard_curve_helpers.R')
+source('./data_processing_helpers.R')
+source('./file_validation_helpers.R')
+source('./threshold_calc_helpers.R')
+source('./qPCR_overview_helpers.R')
 
 shinyAppServer <- function(input, output, session) {
 
