@@ -15,7 +15,7 @@ You can install the development version of MDMAPR2.0 like so:
 ``` r
 install.packages("devtools")
 library(devtools)
-install_github("ayogasekaram/MDMAPR2.0")
+devtools::install_github("ayogasekaram/MDMAPR2.0")
 ```
 Once installed, run the following command to launch the MDMAPR App:
 
