@@ -1,3 +1,4 @@
+print(getwd())
 source('./R/components/dataImport.R')
 source('./R/components/mappingDashboard.R')
 source('./R/components/stdCurveComponent.R')
@@ -5,6 +6,8 @@ source('./R/components/qPCRDataOverviewComponent.R')
 source('./R/components/welcomeComponent.R')
 
 dashBoardBodyComponent <- function() {
+
+  print(getwd())
 
   shinydashboard::dashboardBody(
 
