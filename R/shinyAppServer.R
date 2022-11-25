@@ -76,7 +76,6 @@
 #' @importFrom bslib is_bs_theme
 NULL
 
-setwd("MDMAPR2.0/R/")
 source('table_creation_helpers.R')
 source('standard_curve_helpers.R')
 source('data_processing_helpers.R')
