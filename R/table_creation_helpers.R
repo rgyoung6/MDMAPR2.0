@@ -1,4 +1,6 @@
 #Function takes in user uploaded data and parses it into Project table.
+
+#' @export
 create_project_table <- function(uploaded_data) {
   project_table <-
     distinct(uploaded_data[, c(
@@ -19,6 +21,7 @@ create_project_table <- function(uploaded_data) {
 
 
 #Function takes in user uploaded data and parses it into Geographic Region table.
+#' @export
 create_geographicRegion_Table <- function(uploaded_data) {
   geographicRegion_table <-
     distinct(uploaded_data[, c(
@@ -35,6 +38,7 @@ create_geographicRegion_Table <- function(uploaded_data) {
 
 
 #Function takes in user uploaded data and parses it into Site table.
+#' @export
 create_site_Table <- function(uploaded_data) {
   site_table <-
     distinct(uploaded_data[, c(
@@ -53,6 +57,7 @@ create_site_Table <- function(uploaded_data) {
 
 
 #Function takes in user uploaded data and parses it into Station table.
+#' @export
 create_station_Table <- function(uploaded_data) {
   station_Table <-
     distinct(uploaded_data[, c("stationID",
@@ -67,6 +72,7 @@ create_station_Table <- function(uploaded_data) {
 
 
 #Function takes in user uploaded data and parses it into Replicate table.
+#' @export
 create_replicate_Table <- function(uploaded_data) {
   replicate_Table <-
     distinct(uploaded_data[, c(
@@ -116,6 +122,7 @@ create_replicate_Table <- function(uploaded_data) {
 
 
 #Function takes in user uploaded data and parses it into Extract table.
+#' @export
 create_extract_Table <- function(uploaded_data) {
   extract_Table <-
     distinct(uploaded_data[, c(
@@ -144,6 +151,7 @@ create_extract_Table <- function(uploaded_data) {
 
 
 ##Function takes in user uploaded data and parses it into Result table.
+#' @export
 create_results_Table <- function(uploaded_data) {
   results_Table <-
     uploaded_data[, c(
@@ -238,6 +246,7 @@ create_results_Table <- function(uploaded_data) {
 
 
 #Function takes in user uploaded data and parses it into Assay table.
+#' @export
 create_assay_Table <- function(uploaded_data) {
   assay_table <-
     distinct(uploaded_data[, c(
@@ -270,6 +279,7 @@ create_assay_Table <- function(uploaded_data) {
 
 
 #Function takes in user uploaded data and parses it into Taxon table.
+#' @export
 create_taxon_Table <- function(uploaded_data) {
   taxon_table <-
     distinct(uploaded_data[, c(
@@ -292,7 +302,8 @@ create_taxon_Table <- function(uploaded_data) {
 
 
 
-##Function takes in user uploaded data and parses it into PCR Chemsitry table.
+##Function takes in user uploaded data and parses it into PCR Chemistry table.'
+#' @export
 create_pcrChemistry_Table <- function(uploaded_data, SC_uploaded_data) {
 
   pcrChemistry_table <-
@@ -343,6 +354,7 @@ create_pcrChemistry_Table <- function(uploaded_data, SC_uploaded_data) {
 
 
 #Function takes in user uploaded data and parses it into Standard Curve table.
+#' @export
 create_standardCurve_Table <- function(uploaded_data) {
   standardCurve_Table <-
     distinct(uploaded_data[, c(
@@ -363,6 +375,7 @@ create_standardCurve_Table <- function(uploaded_data) {
 
 
 #Function takes in user uploaded data and parses it into Standard Curve Result table.
+#' @export
 create_standardCurveResults_Table <- function(uploaded_data) {
   standardCurveResults_Table <-
     uploaded_data[, c(
@@ -458,6 +471,7 @@ create_standardCurveResults_Table <- function(uploaded_data) {
 
 
 #Function takes in user uploaded data and parses it into Run Information table.
+#' @keywords Internal
 create_runInformation_Table <-
   function(uploaded_data, SC_uploaded_data) {
     runInformation_Table <-

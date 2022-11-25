@@ -6,6 +6,7 @@
 
 ########### These validations happen as the user uploads the file#####
 #Function to give pop-up validation messages for uploaded fluorescence file., is it the correct file type?
+#' @keywords Internal
 fluorescence_file_validation_msgs <- function(flur_file) {
 
   if (file_ext(flur_file$datapath) %ni% c("rdml"))
