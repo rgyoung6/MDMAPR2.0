@@ -3,6 +3,7 @@
 export(launchMDMAPR)
 import(dplyr)
 import(ggplot2)
+import(here)
 import(htmltools)
 import(leaflet)
 import(leaflet.extras)

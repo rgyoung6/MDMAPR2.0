@@ -3,6 +3,7 @@
 #' @importFrom DT renderDataTable
 #' @importFrom DT datatable
 #' @import leaflet
+#' @import here
 #' @import leaflet.extras
 #' @importFrom shinydashboard box
 #' @importFrom shinyWidgets pickerInput
@@ -81,7 +82,7 @@ NULL
 shinyAppServer <- function(input, output, session) {
 
   print(getwd())
-  source('table_creation_helpers.R')
+  source(here::here('table_creation_helpers.R'))
   source('standard_curve_helpers.R')
   source('data_processing_helpers.R')
   source('file_validation_helpers.R')
