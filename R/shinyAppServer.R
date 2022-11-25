@@ -80,6 +80,7 @@ NULL
 
 shinyAppServer <- function(input, output, session) {
 
+  print(getwd())
   source('table_creation_helpers.R')
   source('standard_curve_helpers.R')
   source('data_processing_helpers.R')
