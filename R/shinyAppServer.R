@@ -196,7 +196,7 @@ shinyAppServer <- function(input, output, session) {
     error_message()})
 
   #Pop-up validation messages for uploaded fluorescence file.
-  observeEvent(input$qpcr_file,MDMAPR2.0::fluorescence_file_validation_msgs(input$qpcr_file))
+  observeEvent(input$qpcr_file,fluorescence_file_validation_msgs(input$qpcr_file))
 
   #Pop-up validation messages for uploaded std_curve file.
   observeEvent(input$SCI_fluorescence_file, std_fluorescence_file_validation_msgs(input$SCI_fluorescence_file))
