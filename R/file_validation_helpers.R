@@ -6,7 +6,7 @@
 
 ########### These validations happen as the user uploads the file#####
 #Function to give pop-up validation messages for uploaded fluorescence file., is it the correct file type?
-#' @keywords Internal
+#' @export
 fluorescence_file_validation_msgs <- function(flur_file) {
 
   if (file_ext(flur_file$datapath) %ni% c("rdml"))
@@ -16,6 +16,7 @@ fluorescence_file_validation_msgs <- function(flur_file) {
 }
 
 #Function to give pop-up validation messages for uploaded metadata file., is format of the metadata good (only applies to the sheets related to the fluorescence file)
+#' @export
 metadata_file_validation_msgs <- function(meta_file){
 
   if (file_ext(meta_file$datapath) %ni% c("xlsx", "xls"))
@@ -44,6 +45,7 @@ metadata_file_validation_msgs <- function(meta_file){
 }
 
 # platform selection only applies if they are uploading standard curve file. Execute this function if the standard curve file is uploaded.
+#' @export
 selected_platform_validation_msgs <- function(standard_curve, meta_file, platform){
 
   #If files are MIC
@@ -114,6 +116,7 @@ selected_platform_validation_msgs <- function(standard_curve, meta_file, platfor
 
 }
 
+#' @export
 std_fluorescence_file_validation_msgs <- function(std_file) {
   if (file_ext(std_file$datapath) %ni% c("csv", "xlsx", "xls"))
   {shinyjs::alert("ERROR: Fluorescence file is not an accepted file type.")}
@@ -121,6 +124,7 @@ std_fluorescence_file_validation_msgs <- function(std_file) {
 
 }
 
+#' @export
 std_metadata_file_validation_msgs <- function(meta_file){
 
   if (file_ext(meta_file$datapath) %ni% c("xlsx", "xls"))
@@ -145,7 +149,7 @@ std_metadata_file_validation_msgs <- function(meta_file){
 
 # invoke this function within the user uploaded data on the main data import page
 #Function runs validation tests on user uploaded standard curve file.
-
+#' @export
 user_uploaded_standard_curve_file_validation <- function(standard_curve, metadata_file, platform_type){
   if (is.null(standard_curve) | is.null(metadata_file))
   {print("no files")
@@ -259,6 +263,7 @@ user_uploaded_standard_curve_file_validation <- function(standard_curve, metadat
 }
 
 #Function runs validation tests on user uploaded files.
+#' @export
 user_uploaded_file_validate <- function(fluor_file, metadata_file, platform_type, standard_curve, dataset_name){
 
   print("inside validation function")
