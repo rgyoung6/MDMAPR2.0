@@ -87,7 +87,7 @@ welcomeComponent <- function() {
                       href = "plugins/font-awesome-4.7.0/css/font-awesome.min.css"),
             shiny::tags$link(rel = "icon",
                       type = "image/png",
-                      href = "images/logo_icon.png")
+                      href = system.file("images/logo_icon.png", "MDMAPR2.0"))
           ),
           shiny::br(),
           box(title = "Vignettes",
