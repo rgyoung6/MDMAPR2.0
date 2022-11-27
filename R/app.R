@@ -14,5 +14,5 @@
 
 # wrapper for shiny::shinyApp()
 launchMDMAPR <- function() {
-  shinyApp(ui = shinyAppUI, server = shinyAppServer)
+  shiny::shinyApp(ui = shinyAppUI, server = shinyAppServer)
 }
