@@ -10,11 +10,9 @@ shinyAppUI <- shinydashboard::dashboardPage(
   ##Sidebar content
   shinydashboard::dashboardSidebar(width=230,
                                    shinydashboard::sidebarMenu(
-                     htmltools::img(src=system.file("mdmaprlogo2.png", "MDMAPR2.0"),height=230,width=230),
+                     htmltools::img(src=system.file(here::here("inst/www/mdmaprlogo2.png"), "MDMAPR2.0"),height=230,width=230),
                      #To allow app to use functions from shinyjs package
                      shinyjs::useShinyjs(),
-                     print(getwd()),
-                     print(here::here()),
 
                      #ID values for sidebar menu items
                      id = "tab_being_displayed",
