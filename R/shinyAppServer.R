@@ -81,12 +81,12 @@ NULL
 
 shinyAppServer <- function(input, output, session) {
 
-  source(here::here('Desktop/MDMAPR2.0/R','table_creation_helpers.R'))
-  source(here::here('Desktop/MDMAPR2.0/R','standard_curve_helpers.R'))
+  #source(here::here('Desktop/MDMAPR2.0/R','table_creation_helpers.R'))
+  #source(here::here('Desktop/MDMAPR2.0/R','standard_curve_helpers.R'))
   #source(here::here('Desktop/MDMAPR2.0/R','data_processing_helpers.R'))
   #source(here::here('Desktop/MDMAPR2.0/R','file_validation_helpers.R'))
-  source(here::here('Desktop/MDMAPR2.0/R','threshold_calc_helpers.R'))
-  source(here::here('Desktop/MDMAPR2.0/R','qPCR_overview_helpers.R'))
+  #source(here::here('Desktop/MDMAPR2.0/R','threshold_calc_helpers.R'))
+  #source(here::here('Desktop/MDMAPR2.0/R','qPCR_overview_helpers.R'))
 
   #Function that is opposite on 'is in' function
   '%ni%' <- Negate('%in%')

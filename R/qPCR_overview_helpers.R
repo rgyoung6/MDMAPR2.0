@@ -1,4 +1,5 @@
 #Colour cell value by Cqvalue to indicate if species is present or absent
+#' @export
 what_clr <- function(value) {
   if (value >= input$cqValueCutoff)
   {return ("#8FBACB")}
@@ -7,7 +8,7 @@ what_clr <- function(value) {
   {return("#ffb14e")}
 }
 
-
+#' @export
 available_threshold <- function(value) {
   if (value == "Unable to Determine Threshold")
   {return ("#ffd700")}

@@ -1,4 +1,5 @@
 #Function calculates threshold value for each individual well on a qPCR plate based on raw absorbance values. The threshold function is based on the second derivative method to calculate the threshold value for qPCR data.
+#' @export
 calculate_threshold_value <- function(fluorescence_values) {
 
   fluorescence_values <- as.data.frame(t(fluorescence_values))
@@ -86,6 +87,7 @@ calculate_threshold_value <- function(fluorescence_values) {
   return(thresholdData)
 }
 #Function is used to calculated Cq value from a set of fluorescence data
+#' @export
 add_CqValue <- function(flur_file, meta_file) {
 
   #remove one to exclude CqValue column
@@ -118,6 +120,7 @@ add_CqValue <- function(flur_file, meta_file) {
 
 }
 
+#' @export
 format_standardCurve_metadata <- function (standardCurve_metadata) {
   standardCurve_Table <- as.data.frame(standardCurve_metadata[, c("SCresultID",
                                                                   "runID",
@@ -158,6 +161,7 @@ format_standardCurve_metadata <- function (standardCurve_metadata) {
   return (standardCurve_Table)
 }
 #Return popup message regarding uploaded standard curve fluorescence file.
+#' @export
 control_records_to_remove <- function(meta_data) {
   if (length(which(grepl("Y", toupper(meta_data$control)))) != 0)
   {return (meta_data[-c(which(grepl("Y", toupper(meta_data$control)))), ])}
@@ -166,6 +170,7 @@ control_records_to_remove <- function(meta_data) {
   {return(meta_data)}
 }
 
+#' @export
 process_MIC_uploaded_file <- function(fluorescence_file) {
 
   #Transpose fluorescence dataframe
@@ -191,6 +196,7 @@ process_MIC_uploaded_file <- function(fluorescence_file) {
 
 }
 
+#' @export
 process_biomeme23_uploaded_file <- function(fluorescence_file) {
 
   #Creating dataframe with fluorescence values and ct intensity value from biomem raw qPCR file
@@ -211,6 +217,7 @@ process_biomeme23_uploaded_file <- function(fluorescence_file) {
   return (qpcr_biomem23_fluorescence)
 }
 
+#' @export
 merge_standardCurve_metadata_fluorescence_file <- function(fluorescence_File, metadata) {
 
   #Remove null records (controls or empty runs) and associated fluorescence
@@ -307,6 +314,7 @@ null_records_to_remove_flur <- function(meta_data, fluor_file) {
 
 
 #Function removes null records (controls or empty runs) from metadata file if sample name contains 'null'.
+#' @export
 null_records_to_remove_meta <- function(meta_data) {
   if (length(which(grepl("null", tolower(meta_data$sampleName)))) != 0)
   {return (meta_data[-c(which(grepl("null", tolower(meta_data$sampleName)))), ])}
@@ -318,6 +326,7 @@ null_records_to_remove_meta <- function(meta_data) {
 
 
 #Function to add new rows and column names to stepOneplus dataframe
+#' @export
 reformat_SOP_Flur_data <- function (flur_data) {
   flur_df <- as.data.frame(matrix(nrow = 0, ncol = 40))
   colnames(flur_df) <-  c(paste0("Cycle_Number", 1:40))
@@ -339,6 +348,7 @@ reformat_SOP_Flur_data <- function (flur_data) {
 
 #Function to format raw StepOnePlus fluorescence file in matrix where each row
 #represent a plate well and each column has the fluorescence value for a cycle.
+#' @export
 process_SOP_uploaded_file <- function(fluorescence_file) {
 
   #Remove rows above main table
@@ -382,6 +392,7 @@ process_SOP_uploaded_file <- function(fluorescence_file) {
 
 #Function to format raw StepOnePlus fluorescence file in matrix where each row
 #represent a plate well and each column has the fluorescence value for a cycle, with well names.
+#' @export
 process_SOP_uploaded_file_with_well_names <- function(fluorescence_file) {
 
   #Remove rows above main table
@@ -426,6 +437,7 @@ process_SOP_uploaded_file_with_well_names <- function(fluorescence_file) {
 
 }
 #Function to add new rows and column names to stepOneplus dataframe
+#' @export
 reformat_SOP_Flur_data <- function (flur_data) {
   flur_df <- as.data.frame(matrix(nrow = 0, ncol = 40))
   colnames(flur_df) <-  c(paste0("Cycle_Number", 1:40))
@@ -447,6 +459,7 @@ reformat_SOP_Flur_data <- function (flur_data) {
 
 #Function to format raw StepOnePlus fluorescence file in matrix where each row
 #represent a plate well and each column has the fluorescence value for a cycle.
+#' @export
 process_SOP_uploaded_file <- function(fluorescence_file) {
 
   #Remove rows above main table
@@ -490,6 +503,7 @@ process_SOP_uploaded_file <- function(fluorescence_file) {
 
 #Function to format raw StepOnePlus fluorescence file in matrix where each row
 #represent a plate well and each column has the fluorescence value for a cycle, with well names.
+#' @export
 process_SOP_uploaded_file_with_well_names <- function(fluorescence_file) {
 
   #Remove rows above main table
@@ -537,6 +551,7 @@ process_SOP_uploaded_file_with_well_names <- function(fluorescence_file) {
 
 #Function to format raw Biomeme two3/Franklin fluorescence file in matrix where each row
 # represent a plate well and each column has the fluorescence value for a cycle with well names.
+#' @export
 process_biomeme23_uploaded_file_with_well_names <- function(fluorescence_file) {
 
   #Creating dataframe with fluorescence values from biomem raw qPCR file
@@ -562,6 +577,7 @@ process_biomeme23_uploaded_file_with_well_names <- function(fluorescence_file) {
 
 #Function to format raw StepOnePlus fluorescence file in matrix where each row
 #represent a plate well and each column has the fluorescence value for a cycle, with well names.
+#' @export
 process_SOP_uploaded_file_with_well_names <- function(fluorescence_file) {
 
   #Remove rows above main table
@@ -607,6 +623,7 @@ process_SOP_uploaded_file_with_well_names <- function(fluorescence_file) {
 }
 
 # Function that calculates LOD and LOQ for the standard curve data using the generic method
+#' @export
 calculate_SC_LOD_LOQ <- function(merged_file, LOQthreshold){
   LOD.Data <- merged_file[, c("standardCurveName", "runRecordedBy", "systemCalculatedCqValue", "standardConc")]
   # rename the columns to match the calculation
