@@ -1,3 +1,4 @@
+#' @export
 df_formatting_by_target <- function(fluorescence_df, process_type){
 
   # subset the data with the columns we need for the raw fluorescence
@@ -18,6 +19,7 @@ df_formatting_by_target <- function(fluorescence_df, process_type){
 }
 
 #################### MAIN FUNCTION ####################
+#' @export
 process_Multiplexed_RDML <- function (rdml_file) {
   # read in rdml file
   raw_data <- RDML$new(filename = rdml_file)
@@ -31,6 +33,7 @@ process_Multiplexed_RDML <- function (rdml_file) {
 }
 
 ##############Formatting the metadata File#################
+#' @export
 format_qPCR_metadata <- function(metadataFile) {
 
   #Read in sheets
@@ -60,6 +63,7 @@ format_qPCR_metadata <- function(metadataFile) {
 }
 
 ############### Format the Standard Curve Metadata ##################
+#' @export
 format_std_curve_metadata <- function (standardCurve_metadata) {
   standardCurve_Table <- read_excel(standardCurve_metadata, sheet = 5)
   standardCurve_Table <- as.data.frame(standardCurve_Table[, c("SCresultID",
@@ -102,6 +106,7 @@ format_std_curve_metadata <- function (standardCurve_metadata) {
 }
 
 ############### Removing the control records##################
+#' @export
 remove_null_records <- function(meta_data, fluor_file_list){
   # This function will change the list and metadata files in place
   meta_data_name = deparse(substitute(meta_data))
@@ -119,7 +124,7 @@ remove_null_records <- function(meta_data, fluor_file_list){
   return(cleaned_data)
 }
 
-
+#' @export
 remove_null_records_test <- function(formatted_metadata, raw_multiplex_data_list){
   # This function will change the list and metadata files in place
   meta_data_name = deparse(substitute(formatted_metadata))
@@ -239,6 +244,7 @@ remove_null_records_test <- function(formatted_metadata, raw_multiplex_data_list
 # }
 
 
+#' @export
 calculate_second_deriv_threshold <- function(fluorescence_values_df){
   fluorescence_values <- as.data.frame(t(fluorescence_values_df))
   # now each column is a sample and each row is a cycle
@@ -324,6 +330,7 @@ calculate_second_deriv_threshold <- function(fluorescence_values_df){
 }
 
 ############### Calculating the Cq Value ##################
+#' @export
 add_Cq <- function(fluorescence_df, threshold_val_column, Cq_val_col){
   #fluorescence_df contains: fluorescence values (each row is one sample), the System Calculated Threshold and the user Provided Threshold. The user must specify which column to use for the threshold calculation.
   # need to handle, if the user does not prove threshold values.
@@ -347,6 +354,7 @@ add_Cq <- function(fluorescence_df, threshold_val_column, Cq_val_col){
   return(fluorescence_df)}
 
 ############### Calculating the Copy Number ##################
+#' @export
 calculate_copy_number <- function(standard_curve_flu, experimental_flu){
   regression_line <- lm(log(standardConc) ~ systemCalculatedCqValue, standard_curve_flu, na.action=na.exclude)
   testing_cq <- as.data.frame(experimental_flu$systemCalculatedCqValue)
@@ -359,7 +367,7 @@ calculate_copy_number <- function(standard_curve_flu, experimental_flu){
 }
 
 ############### Functions for processing the standard curve flu ##################
-
+#' @export
 # For MIC
 process_MIC_raw_data <- function(raw_fluorescence){
   raw_fluorescence <- as.data.frame(t(raw_fluorescence[, 2:ncol(raw_fluorescence)]))
@@ -376,6 +384,7 @@ process_MIC_raw_data <- function(raw_fluorescence){
 }
 
 # For Biomeme
+#' @export
 process_biomeme_raw_data <- function(raw_fluorescence){
   #Creating dataframe with fluorescence values from biomem raw qPCR file
   end_row <-(which(grepl('Raw Fluorescence', raw_fluorescence$Run.Name))) - 2
@@ -394,7 +403,7 @@ process_biomeme_raw_data <- function(raw_fluorescence){
 }
 
 ############### Functions for processing merged file ##################
-
+#' @export
 merged_file_processing <- function(merged_file, dataset_name){
   # handling extreme cq values
 
