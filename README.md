@@ -22,6 +22,9 @@ Once installed, please load the package and run the following command to launch 
 library(MDMAPR2.0)
 launchMDMAPR()
 ```
+
+## If fluorescence data is not in RDML...
+
 ## Mapping Dashboard
 
 <kbd><img src="images/mapping_dashboard.png" width=600></kbd>
