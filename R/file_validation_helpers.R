@@ -6,7 +6,7 @@
 
 ########### These validations happen as the user uploads the file#####
 #Function to give pop-up validation messages for uploaded fluorescence file., is it the correct file type?
-#' @export
+
 fluorescence_file_validation_msgs <- function(flur_file) {
 
   if (file_ext(flur_file$datapath) %ni% c("rdml"))
@@ -16,7 +16,7 @@ fluorescence_file_validation_msgs <- function(flur_file) {
 }
 
 #Function to give pop-up validation messages for uploaded metadata file., is format of the metadata good (only applies to the sheets related to the fluorescence file)
-#' @export
+
 metadata_file_validation_msgs <- function(meta_file){
 
   if (file_ext(meta_file$datapath) %ni% c("xlsx", "xls"))
@@ -45,78 +45,78 @@ metadata_file_validation_msgs <- function(meta_file){
 }
 
 # platform selection only applies if they are uploading standard curve file. Execute this function if the standard curve file is uploaded.
-#' @export
-selected_platform_validation_msgs <- function(standard_curve, meta_file, platform){
 
-  #If files are MIC
-  if (platform == "MIC")
+#selected_platform_validation_msgs <- function(standard_curve, meta_file, platform){
 
-  {if (file_ext(standard_curve$datapath) != "csv")
-  {shinyjs::alert("ERROR: MIC fluorescence file must be csv.")}
+#  #If files are MIC
+#  if (platform == "MIC")
+
+#  {if (file_ext(standard_curve$datapath) != "csv")
+#  {shinyjs::alert("ERROR: MIC fluorescence file must be csv.")}
 
 
     #check if fluorescence file if biomeme file
-    else if (read.csv(standard_curve$datapath)[1, 1] == 'Date & Time')
-    {shinyjs::alert("ERROR: Fluorescence file is not correct file type for MIC platform.")}
+#    else if (read.csv(standard_curve$datapath)[1, 1] == 'Date & Time')
+#    {shinyjs::alert("ERROR: Fluorescence file is not correct file type for MIC platform.")}
 
 
-    #Check is fluorescence file processing  function work
-    else if (is.error(process_MIC_raw_data(read.csv(standard_curve$datapath))) == TRUE)
-    {return(shinyjs::alert("ERROR: Fluorescence file is not correct file type for MIC platform."))}
+#    #Check is fluorescence file processing  function work
+#    else if (is.error(process_MIC_raw_data(read.csv(standard_curve$datapath))) == TRUE)
+#    {return(shinyjs::alert("ERROR: Fluorescence file is not correct file type for MIC platform."))}
 
 
-    #Check that formatted fluorescence file and formatted metadata file have the same number of rows
-    else if (nrow(process_MIC_raw_data(read.csv(standard_curve$datapath))) != nrow(format_std_curve_metadata(meta_file$datapath)))
-    {shinyjs::alert("ERROR: Fluorescence file and metadata file have information for different number of wells.")}
+#    #Check that formatted fluorescence file and formatted metadata file have the same number of rows
+#    else if (nrow(process_MIC_raw_data(read.csv(standard_curve$datapath))) != nrow(format_std_curve_metadata(meta_file$datapath)))
+#    {shinyjs::alert("ERROR: Fluorescence file and metadata file have information for different number of wells.")}
 
-    else {shinyjs::alert("Successful platform selected.")}}
-
-
-
-  else if (platform == "StepOnePlus")
-
-  {if (file_ext(standard_curve$datapath) %ni% c("xlsx", "xls"))
-  {shinyjs::alert("ERROR: Step One Plus fluorescence file must be xlsx/xls.")}
-
-    #Check is fluorescence file processingfunction work
-    else if (is.error(process_SOP_uploaded_file(read_excel(standard_curve$datapath, 4))) == TRUE)
-    {return(shinyjs::alert("ERROR: Fluorescence file is not correct file type for Step One Plus platform."))}
-
-    #Check that formatted fluorescence file and formatted metadata file have the same number of rows
-    else if (nrow(process_SOP_uploaded_file(read_excel(standard_curve$datapath, sheet = 4))) != nrow(format_std_curve_metadata(meta_file$datapath)))
-    {shinyjs::alert("ERROR: Fluorescence file and metadata file have information for different number of wells.")}
-
-    else {shinyjs::alert("Successful platform selected.")}}
+#    else {shinyjs::alert("Successful platform selected.")}}
 
 
 
-  #If files are Biomeme two3/Franklin
-  else if (platform == "Biomeme two3/Franklin")
+#  else if (platform == "StepOnePlus")
 
-  {if (file_ext(standard_curve$datapath) != "csv")
-  {shinyjs::alert("ERROR: Biomeme two3/Franklin fluorescence file must be csv.")}
+#  {if (file_ext(standard_curve$datapath) %ni% c("xlsx", "xls"))
+#  {shinyjs::alert("ERROR: Step One Plus fluorescence file must be xlsx/xls.")}
 
+#    #Check is fluorescence file processingfunction work
+#    else if (is.error(process_SOP_uploaded_file(read_excel(standard_curve$datapath, 4))) == TRUE)
+#    {return(shinyjs::alert("ERROR: Fluorescence file is not correct file type for Step One Plus platform."))}
 
-    #Check is fluorescence file processing  function work
-    else if (is.error(process_biomeme_raw_data(read.csv(standard_curve$datapath))) == TRUE)
-    {return(shinyjs::alert("ERROR: Fluorescence file is not correct file type for Biomeme two3/Franklin platform."))}
+#    #Check that formatted fluorescence file and formatted metadata file have the same number of rows
+#    else if (nrow(process_SOP_uploaded_file(read_excel(standard_curve$datapath, sheet = 4))) != nrow(format_std_curve_metadata(meta_file$datapath)))
+#    {shinyjs::alert("ERROR: Fluorescence file and metadata file have information for different number of wells.")}
 
-
-    #Check that formatted fluorescence file and formatted metadata file have the same number of rows
-    else if (nrow(process_biomeme_raw_data(read.csv(standard_curve$datapath))) != nrow(format_std_curve_metadata(meta_file$datapath)))
-    {shinyjs::alert("ERROR: Fluorescence file and metadata file have information for different number of wells.")}
-
-    else {shinyjs::alert("Successful platform selected.")}}
+#    else {shinyjs::alert("Successful platform selected.")}}
 
 
-  #qPCR platform not selected
-  else {
-    #shinyjs::alert("Please select qPCR platform type.")
-  }
 
-}
+#  #If files are Biomeme two3/Franklin
+#  else if (platform == "Biomeme two3/Franklin")
 
-#' @export
+#  {if (file_ext(standard_curve$datapath) != "csv")
+#  {shinyjs::alert("ERROR: Biomeme two3/Franklin fluorescence file must be csv.")}
+
+
+#    #Check is fluorescence file processing  function work
+#    else if (is.error(process_biomeme_raw_data(read.csv(standard_curve$datapath))) == TRUE)
+#    {return(shinyjs::alert("ERROR: Fluorescence file is not correct file type for Biomeme two3/Franklin platform."))}
+
+
+#    #Check that formatted fluorescence file and formatted metadata file have the same number of rows
+#    else if (nrow(process_biomeme_raw_data(read.csv(standard_curve$datapath))) != nrow(format_std_curve_metadata(meta_file$datapath)))
+#    {shinyjs::alert("ERROR: Fluorescence file and metadata file have information for different number of wells.")}
+
+#    else {shinyjs::alert("Successful platform selected.")}}
+
+
+#  #qPCR platform not selected
+#  else {
+#    #shinyjs::alert("Please select qPCR platform type.")
+#  }
+
+#}
+
+
 std_fluorescence_file_validation_msgs <- function(std_file) {
   if (file_ext(std_file$datapath) %ni% c("csv", "xlsx", "xls"))
   {shinyjs::alert("ERROR: Fluorescence file is not an accepted file type.")}
@@ -124,7 +124,7 @@ std_fluorescence_file_validation_msgs <- function(std_file) {
 
 }
 
-#' @export
+
 std_metadata_file_validation_msgs <- function(meta_file){
 
   if (file_ext(meta_file$datapath) %ni% c("xlsx", "xls"))
@@ -149,9 +149,10 @@ std_metadata_file_validation_msgs <- function(meta_file){
 
 # invoke this function within the user uploaded data on the main data import page
 #Function runs validation tests on user uploaded standard curve file.
-#' @export
-user_uploaded_standard_curve_file_validation <- function(standard_curve, metadata_file, platform_type){
-  if (is.null(standard_curve) | is.null(metadata_file))
+
+#user_uploaded_standard_curve_file_validation <- function(standard_curve, metadata_file, platform_type){
+user_uploaded_standard_curve_file_validation <- function(standard_curve, metadata_file){
+    if (is.null(standard_curve) | is.null(metadata_file))
   {print("no files")
     return(TRUE)}
 
@@ -159,9 +160,9 @@ user_uploaded_standard_curve_file_validation <- function(standard_curve, metadat
   {print("flu not the right format")
     return(TRUE)}
 
-  else if (platform_type == 'None')
-  {print("no platform selected")
-    return(TRUE)}
+#  else if (platform_type == 'None')
+#  {print("no platform selected")
+#    return(TRUE)}
 
   else if (file_ext(metadata_file$datapath) %ni% c("xlsx", "xls"))
   {print("metadata file type not working")
@@ -263,10 +264,15 @@ user_uploaded_standard_curve_file_validation <- function(standard_curve, metadat
 }
 
 #Function runs validation tests on user uploaded files.
-#' @export
-user_uploaded_file_validate <- function(fluor_file, metadata_file, platform_type, standard_curve, dataset_name){
 
-  print("inside validation function")
+#user_uploaded_file_validate <- function(fluor_file, metadata_file, platform_type, standard_curve, dataset_name){
+user_uploaded_file_validate <- function(fluor_file, metadata_file, standard_curve, dataset_name){
+
+  print("Beginning of the user_uploaded_file_validate function")
+  process_file_datapath<<-fluor_file$datapath
+  process_file_name<<-fluor_file
+  process_file_contents<<-process_Multiplexed_RDML(fluor_file$datapath)
+
   # return an error if necessary files are missing
   if (is.null(fluor_file) | is.null(metadata_file))
   {print("null files")
@@ -278,9 +284,9 @@ user_uploaded_file_validate <- function(fluor_file, metadata_file, platform_type
     return(TRUE)}
 
   # if there is a standard curve file is provided but not platform selected, return an error
-  else if (!is.null(standard_curve$datapath) & platform_type == 'None')
-  {print("standard uploaded and no file type")
-    return(TRUE)}
+#  else if (!is.null(standard_curve$datapath) & platform_type == 'None')
+#      {print("standard uploaded and no file type")
+#    return(TRUE)}
 
   # if the metadata files are not in excel format
   else if (file_ext(metadata_file$datapath) %ni% c("xlsx", "xls"))
@@ -311,8 +317,8 @@ user_uploaded_file_validate <- function(fluor_file, metadata_file, platform_type
   else if (is.error(process_Multiplexed_RDML(fluor_file$datapath)) == TRUE)
   {print('error in RDML processing')
     return(TRUE)}
-  #
-  #     #Check that formatted fluorescence file and formatted metadata file have the same number of rows
+
+  #Check that formatted fluorescence file and formatted metadata file have the same number of rows
   else if (nrow(process_Multiplexed_RDML(fluor_file$datapath)[[1]]) != nrow(format_qPCR_metadata(metadata_file$datapath)))
   {print("something wrong with the number of rows")
     return(TRUE)}
@@ -322,8 +328,9 @@ user_uploaded_file_validate <- function(fluor_file, metadata_file, platform_type
   if (!is.null(standard_curve$datapath)){
     print("eval standard curve as true")
     print("coming here without standard?")
-    if(user_uploaded_standard_curve_file_validation(standard_curve, metadata_file, platform_type)==TRUE){
-      print("something wrong with standard curve processing")
+#    if(user_uploaded_standard_curve_file_validation(standard_curve, metadata_file, platform_type)==TRUE){
+    if(user_uploaded_standard_curve_file_validation(standard_curve, metadata_file)==TRUE){
+        print("something wrong with standard curve processing")
       return(TRUE)}
     else{return(FALSE)}
   } # end of conditionals based on the presence of a standard curve file

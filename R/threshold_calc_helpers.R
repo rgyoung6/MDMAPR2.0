@@ -16,7 +16,7 @@ setMethod("summary", signature(object = "th"), function(object) {
   print(slot(object, "stats"))
 })
 
-#th.cyc() function is from the archieved R package chipPCR.
+#th.cyc() function is from the archived R package chipPCR.
 th.cyc <-
   function(x, y, r = 2500, auto = FALSE, linear = TRUE) {
 

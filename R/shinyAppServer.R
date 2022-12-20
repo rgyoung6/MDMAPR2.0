@@ -16,6 +16,7 @@
 #' @import readxl
 #' @import reactable
 #' @import writexl
+#' @import RDML
 #' @importFrom xfun file_ext
 #' @importFrom berryFunctions is.error
 #' @importFrom plotly plotlyOutput
@@ -75,18 +76,9 @@
 #' @importFrom stats quantile
 #' @importFrom stats residuals
 #' @importFrom bslib is_bs_theme
-NULL
-
 
 
 shinyAppServer <- function(input, output, session) {
-
-  #source(here::here('Desktop/MDMAPR2.0/R','table_creation_helpers.R'))
-  #source(here::here('Desktop/MDMAPR2.0/R','standard_curve_helpers.R'))
-  #source(here::here('Desktop/MDMAPR2.0/R','data_processing_helpers.R'))
-  #source(here::here('Desktop/MDMAPR2.0/R','file_validation_helpers.R'))
-  #source(here::here('Desktop/MDMAPR2.0/R','threshold_calc_helpers.R'))
-  #source(here::here('Desktop/MDMAPR2.0/R','qPCR_overview_helpers.R'))
 
   #Function that is opposite on 'is in' function
   '%ni%' <- Negate('%in%')
@@ -95,102 +87,17 @@ shinyAppServer <- function(input, output, session) {
 
   #Icons from https://fontawesome.com/icons?from=io
 
-  ############ Value Boxes Above the Map ##########
-  sample_number <- reactive({
-
-    if (!is.null(uploaded_data())) {
-      filt_data <- as.data.frame(filtered())
-      return(length(unique(filt_data$extractID)))}
-
-    else { return (0)}
-  })
-
-  output$sampleBox <- renderValueBox({
-
-    val <- as.numeric(sample_number())
-
-    valueBox(
-      paste0(sample_number()),
-      "Samples",
-      icon = shiny::tags$i(class = "fas fa-vials", style="font-size: 15px"),
-      color = "yellow"
-    )})
-
-
-  platform_number <- reactive({
-    if (!is.null(uploaded_data())) {
-      filt_data <- as.data.frame(filtered())
-      return(length(unique(filt_data$runPlatform)))}
-
-    else { return (0)}
-  })
-
-
-  output$platformBox <- renderValueBox({
-
-    valueBox(
-      paste0(platform_number()),
-      "Unique qPCR Platforms",
-      icon = shiny::tags$i(class = "fas fa-hdd", style="font-size: 15px"),
-      color = "yellow"
-    )})
-
-
-
-
-  taxon_number <- reactive({
-    if (!is.null(uploaded_data())) {
-      filt_data <- as.data.frame(filtered())
-      return(length(unique(filt_data$taxonID)))}
-
-    else { return (0)}
-  })
-
-
-
-  output$taxonBox <- renderValueBox({
-
-    valueBox(
-      paste0(taxon_number()),
-      "Taxon",
-      icon = shiny::tags$i(class = "fas fa-frog", style="font-size: 15px"),
-      color = "yellow"
-    )})
-
-
-
-  assay_number <- reactive({
-    if (!is.null(uploaded_data())) {
-      filt_data <- as.data.frame(filtered())
-      return(length(unique(filt_data$assayID)))}
-
-    else { return (0)}
-  })
-
-
-
-  output$assayBox <- renderValueBox({
-
-    valueBox(
-      value=shiny::tags$p(paste(assay_number()," Unique Assays"), style = "font-size: 70%;"),
-      subtitle = "",
-      icon = shiny::tags$i(class = "fas fa-flask", style="font-size: 30px"),
-      color = "yellow"
-    )})
-
 
   ############ File Validation Upon Upload ##########
 
   #File validate errors messages.
   error_message <- reactive({
     validate(need(input$qpcr_file, 'No fluorescence file uploaded'),
-             need(input$upload_data_name, 'No name given to data set'),
+             need(try(file_ext(input$qpcr_file) == "rdml"), "Fluorescence file must be an RDML"),
              need(input$metadata_file, 'No metadata file uploaded'),
-             need(try(file_ext(input$qpcr_file) == "rdml") ,
-                  "fluorescence file must be an RDML"),
-             need(try(file_ext(input$metadata_file) == "xlsx" | file_ext(input$metadata_file) == "xls") , "Metadata file must be xlsx/xls"))
+             need(try(file_ext(input$metadata_file) == "xlsx" | file_ext(input$metadata_file) == "xls") , "Metadata file must be xlsx/xls"),
+             need(input$upload_data_name, 'No name given to data set'))
   })
-
 
   output$error_msg <- renderText({
     error_message()})
@@ -204,26 +111,18 @@ shinyAppServer <- function(input, output, session) {
   #Pop-up validation messages for uploaded metadata file,
   observeEvent(input$metadata_file, metadata_file_validation_msgs(input$metadata_file))
 
-  observeEvent(req(input$qpcr_file, input$metadata_file),
-               selected_platform_validation_msgs(input$SCI_fluorescence_file,
-                                                 input$metadata_file,
-                                                 input$platform))
-
-
   ############ File Validation Upon Add Data Upload ##########
 
   #File validate errors messages.
   error_message_add <- reactive({
     validate(need(input$qpcr_file_add, 'No fluorescence file uploaded'),
-             need(input$dataset_name_add, 'No name given to data set'),
+             need(try(file_ext(input$qpcr_file_add) == "rdml"), "Fluorescence file must be an RDML"),
              need(input$metadata_file_add, 'No metadata file uploaded'),
-             need(try(file_ext(input$qpcr_file_add) == "rdml") ,
-                  "Fluorescence file must be an RDML"),
-             need(try(file_ext(input$metadata_file_add) == "xlsx" | file_ext(input$metadata_file_add) == "xls") , "Metadata file must be xlsx/xls"))
+             need(try(file_ext(input$metadata_file_add) == "xlsx" | file_ext(input$metadata_file_add) == "xls"), "Metadata file must be xlsx/xls"),
+             need(input$dataset_name_add, 'No name given to data set'))
   })
 
-
-  output$error_msg <- renderText({
+  output$error_msg_add <- renderText({
     error_message()})
 
   #Pop-up validation messages for uploaded fluorescence file.
@@ -232,15 +131,9 @@ shinyAppServer <- function(input, output, session) {
   #Pop-up validation messages for uploaded std_curve file.
   observeEvent(input$SCI_fluorescence_file_add, std_fluorescence_file_validation_msgs(input$SCI_fluorescence_file_add))
 
-
-
   #Pop-up validation messages for uploaded metadata file,
   observeEvent(input$metadata_file_add, metadata_file_validation_msgs(input$metadata_file_add))
 
-  observeEvent(req(input$qpcr_file_add, input$metadata_file_add),
-               selected_platform_validation_msgs(input$SCI_fluorescence_file_add,
-                                                 input$metadata_file_add,
-                                                 input$platform_add))
 
 
 
@@ -251,33 +144,33 @@ shinyAppServer <- function(input, output, session) {
   #initalize uploaded_data reactive variable
   uploaded_data <- reactiveVal(value = NULL)
 
-  observeEvent(input$submit, {
-    output$dataexport <- renderDataTable({
-      export_data <- as.data.frame(uploaded_data())
-      datatable(export_data,
-                options = list(
-                  scrollX = TRUE
-                ))
-    })
-  })
+#  observeEvent(input$submit, {
+#    output$dataexport <- renderDataTable({
+#      export_data <- as.data.frame(uploaded_data())
+#      datatable(export_data,
+#                options = list(
+#                  scrollX = TRUE
+#                ))
+#    })
+#  })
 
-  observeEvent(input$submit, {
+#  observeEvent(input$submit, {
 
-    updateTabItems(session, "tab_being_displayed", "dashboard")
+#    updateTabItems(session, "tab_being_displayed", "dashboard")
 
-    withProgress(message = 'Creating data export', value = 0, {
-      output$dataexport <- renderDataTable({
-        export_data <- as.data.frame(uploaded_data())
-        datatable(export_data,
-                  options = list(
-                    scrollX = TRUE
-                  ))
-      })
+#    withProgress(message = 'Creating data export', value = 0, {
+#      output$dataexport <- renderDataTable({
+#        export_data <- as.data.frame(uploaded_data())
+#        datatable(export_data,
+#                  options = list(
+#                    scrollX = TRUE
+#                  ))
+#      })
 
       # Increment the progress bar, and update the detail text.
-      incProgress(1, detail = paste("Doing part", 1))
-    })
-  })
+#      incProgress(1, detail = paste("Doing part", 1))
+#    })
+#  })
 
   observeEvent(input$submit, {
 
@@ -285,7 +178,8 @@ shinyAppServer <- function(input, output, session) {
 
     withProgress(message = 'Validating files', value = 0, {
 
-      valid_files <- user_uploaded_file_validate(input$qpcr_file, input$metadata_file, input$platform, input$SCI_fluorescence_file, input$dataset_name)
+#      valid_files <- user_uploaded_file_validate(input$qpcr_file, input$metadata_file, input$platform, input$SCI_fluorescence_file, input$dataset_name)
+      valid_files <- user_uploaded_file_validate(input$qpcr_file, input$metadata_file, input$SCI_fluorescence_file, input$dataset_name)
 
       incProgress(1, detail = paste("Doing part", 1))
     })
@@ -294,10 +188,8 @@ shinyAppServer <- function(input, output, session) {
     if (valid_files == TRUE)
     {return(uploaded_data(NULL))}
 
-
     else{
       updateTabItems(session, "tab_being_displayed", "dashboard")
-
 
       withProgress(message = 'Processing data', value = 0, {
 
@@ -305,69 +197,101 @@ shinyAppServer <- function(input, output, session) {
         raw_multiplex_data_list <- process_Multiplexed_RDML(input$qpcr_file$datapath)
         print(dim(raw_multiplex_data_list[[1]]))
 
+#lapply(raw_multiplex_data_list, function(x) write.table( data.frame(x), 'test.csv'  , append= T, sep=',' ))
+
         # Increment the progress bar, and update the detail text.
         incProgress(1/6, detail = paste("Processing RDML", 1))
 
         # 2. Read in and format the metadata
+
+print("Server - Submit - 2. Read in and format the metadata - BEGIN")
+
         formatted_metadata <- format_qPCR_metadata(input$metadata_file$datapath)
+
+print("Server - Submit - 2. Read in and format the metadata - END")
 
         # Increment the progress bar, and update the detail text.
         incProgress(1/6, detail = paste("Formatting Metadata", 2))
 
         # 3. remove the control records
+
+print("Server - Submit - 3. remove the control records - BEGIN")
+
         controls_removed <- remove_null_records(formatted_metadata, raw_multiplex_data_list)
+
         # 3b. Let's separate the controls list object
+
+print("Server - Submit - 3b. Let's separate the controls list object - BEGIN")
+
         formatted_metadata <- controls_removed[[2]]
         raw_multiplex_data_list <-controls_removed[[1]]
+
+print("Server - Submit - 3b. Let's separate the controls list object - END")
+print("Server - Submit - 3. remove the control records - END")
 
         incProgress(1/6, detail = paste("Handling Control Records", 3))
 
         # 4. Calculate the second derivative threshold
+
+print("Server - Submit - 4. Calculate the second derivative threshold - BEGIN")
+
         # convert all columns into numeric values
         raw_multiplex_data_list <- lapply(raw_multiplex_data_list, function(x) {sapply(x[,c(2:ncol(x))], as.numeric);x})
+print("Server - Submit - 4. Calculate the second derivative threshold - Here 1")
         print(dim(raw_multiplex_data_list[[1]]))
+
         # confirm WellLocation is the row name
         raw_multiplex_data_list <- lapply(raw_multiplex_data_list, function(x){rownames(x)<- as.character(x$wellLocation);x})
+print("Server - Submit - 4. Calculate the second derivative threshold - Here 2")
 
         # remove the column that contains the wellLocation information
         raw_multiplex_data_list <- lapply(raw_multiplex_data_list, function(x){x <- x[,-1]})
+print("Server - Submit - 4. Calculate the second derivative threshold - Here 3")
 
         # calculate threshold
         print(dim(raw_multiplex_data_list[[1]]))
         raw_multiplex_data_list <- lapply(raw_multiplex_data_list,calculate_second_deriv_threshold)
+print("Server - Submit - 4. Calculate the second derivative threshold - Here 4")
 
         # Add the userprovided threshold value
         raw_multiplex_data_list <- lapply(raw_multiplex_data_list, function(x){merge(x, formatted_metadata[ , c("userProvidedThresholdValue", "wellLocation")], by="wellLocation")})
+print("Server - Submit - 4. Calculate the second derivative threshold - Here 5")
 
         incProgress(1/6, detail = paste("Calculating Threshold", 4))
 
+print("Server - Submit - 4. Calculate the second derivative threshold - END")
+
         # 5. Calculate the Cq value using the threshold
+
+print("Server - Submit - 5. Calculate the Cq value using the threshold - BEGIN")
+
         raw_data_with_Cq <- lapply(raw_multiplex_data_list, function(x){add_Cq(x, "systemCalculatedThresholdValue", "systemCalculatedCqValue")})
 
         incProgress(1/6, detail = paste("Calculating Cq", 5))
 
+print("Server - Submit - 5. Calculate the Cq value using the threshold - END")
+
         # 6. If the user has threshold values provided, calculate the Cq value with that threshold
+
+print("Server - Submit - 6. If the user has threshold values provided, calculate the Cq value with that threshold - BEGIN")
+
         for(target in 1:length(raw_data_with_Cq)){
+print("In the if there are submitted Cq")
           copy_numbers <- list()
           if(any(is.na(raw_data_with_Cq[[target]]$userProvidedThresholdValue))){
             raw_data_with_Cq[[target]] <- cbind(raw_data_with_Cq[[target]],CqvaluewithUserThreshold="No Threshold Value Provided by User")
           } else{
+print("In the else there are submitted Cq")
             raw_data_with_Cq[[target]] <- add_Cq(raw_data_with_Cq[[target]],"userProvidedThresholdValue", "CqvaluewithUserThreshold")}
-          copy_numbers[[length(copy_numbers)+1]] <- data.frame(wellLocation=formatted_metadata$wellLocation, logDNACopyNumber=rep("NA", nrow(raw_data_with_Cq[[target]])), rSquared=rep("NA", nrow(raw_data_with_Cq[[target]])))
+            copy_numbers[[length(copy_numbers)+1]] <- data.frame(wellLocation=formatted_metadata$wellLocation, logDNACopyNumber=rep("NA", nrow(raw_data_with_Cq[[target]])), rSquared=rep("NA", nrow(raw_data_with_Cq[[target]])))
         }
+print("After the if there are submitted Cq")
         # Assess if standard curve file has been provided, if so, process the fluorescence and metadata
         if (!is.null(input$SCI_fluorescence_file)){
           print("is there a problem")
           print(!is.null(input$SCI_fluorescence_file))
 
-          # if the standard curve file is provided, the platform specific processing is required
-          if (input$platform == "Biomeme two3/Franklin") {
-            std_fluorescence <- process_biomeme_raw_data(read.csv(input$SCI_fluorescence_file$datapath))}
-          else if (input$platform == "MIC/BioRad") {
-            std_fluorescence <- process_MIC_raw_data(read.csv(input$SCI_fluorescence_file$datapath))}
-          else if (input$platform == "StepOnePlus") {
-            #Read in raw qPCR data
-            std_fluorescence <- process_SOP_uploaded_file(read_excel(input$SCI_fluorescence_file$datapath, 4))}
+          std_fluorescence <- process_SOP_uploaded_file(read_excel(input$SCI_fluorescence_file$datapath, 4))
 
           # all metadata files are processed with the same function
           std_meta <- format_std_curve_metadata(input$metadata_file$datapath)
@@ -393,6 +317,9 @@ shinyAppServer <- function(input, output, session) {
 
         }
         # 11. Merge all the data
+
+print("Server - Submit - 11. Merge all the data - BEGIN")
+
         #all_merged_data <- merge(raw_data_with_Cq[[1]], formatted_metadata, by="wellLocation")
         all_merged_data <- lapply(raw_data_with_Cq, function(x){merge(x,formatted_metadata, by="wellLocation")})
 
@@ -410,14 +337,49 @@ shinyAppServer <- function(input, output, session) {
         # processing the data like cq column intervals
         all_merged_data <- merged_file_processing(all_merged_data, input$upload_data_name)
 
+print("Server - Submit - 11. Merge all the data - Almost done")
 
         incProgress(1/6, detail = paste("Merging Files", 6))
+
+print("Server - Submit - 11. Merge all the data - END")
+
       })
 
-      return(uploaded_data(all_merged_data))
+print("Server - Submit - 11. Merge all the data - Before the return")
+
+print(paste0("Here is the type of uploaded_data",typeof(uploaded_data)))
+print("Here is the contents of all_merged_data")
+print(all_merged_data)
+all_merged_data_global<<-all_merged_data
+
+#      return(uploaded_data(all_merged_data))
+      uploaded_data(all_merged_data)
+
+print("Here is the contents of uploaded_data...")
+print(uploaded_data)
+
+print("Server - Submit - 11. Merge all the data - After the return")
 
       #   }
     }
+
+    updateTabItems(session, "tab_being_displayed", "dashboard")
+
+    withProgress(message = 'Creating data export', value = 0, {
+      output$dataexport <- renderDataTable({
+        export_data <- as.data.frame(uploaded_data())
+        datatable(export_data,
+                  options = list(
+                    scrollX = TRUE
+                  ))
+      })
+    })
+
+
+    print("At the end of observeEvent(input$submit)")
+
+
+
   })
 
 
@@ -462,8 +424,8 @@ shinyAppServer <- function(input, output, session) {
 
     withProgress(message = 'Validating files', value = 0, {
 
-      valid_files <- user_uploaded_file_validate(input$qpcr_file_add, input$metadata_file_add, input$platform_add, input$SCI_fluorescence_file_add, input$add_data_name)
-
+#      valid_files <- user_uploaded_file_validate(input$qpcr_file_add, input$metadata_file_add, input$platform_add, input$SCI_fluorescence_file_add, input$add_data_name)
+      valid_files <- user_uploaded_file_validate(input$qpcr_file_add, input$metadata_file_add, input$SCI_fluorescence_file_add, input$add_data_name)
       incProgress(1, detail = paste("Doing part", 1))
     })
 
@@ -535,15 +497,6 @@ shinyAppServer <- function(input, output, session) {
         # Assess if standard curve file has been provided, if so, process the fluorescence and metadata
         if (!is.null(input$SCI_fluorescence_file_add)){
 
-          # if the standard curve file is provided, the platform specific processing is required
-          if (input$platform == "Biomeme two3/Franklin") {
-            std_fluorescence <- process_biomeme_raw_data(read.csv(input$SCI_fluorescence_file_add$datapath))}
-          else if (input$platform == "MIC/BioRad") {
-            std_fluorescence <- process_MIC_raw_data(read.csv(input$SCI_fluorescence_file_add$datapath))}
-          else if (input$platform == "StepOnePlus") {
-            #Read in raw qPCR data
-            std_fluorescence <- process_SOP_uploaded_file(read_excel(input$SCI_fluorescence_file_add$datapath, 4))}
-
           # all metadata files are processed with the same function
           std_meta <- format_std_curve_metadata(input$metadata_file_add$datapath)
           print(std_meta)
@@ -588,6 +541,9 @@ shinyAppServer <- function(input, output, session) {
 
       #   }
     }
+
+print("At the end of observeEvent(input$submit_add)")
+
   })
 
 
@@ -992,10 +948,10 @@ shinyAppServer <- function(input, output, session) {
       "systemCalculatedThresholdValue","systemCalculatedCqValue", "Cycle_Number1",	"Cycle_Number2", "Cycle_Number3",	"Cycle_Number4",
       "Cycle_Number5", "Cycle_Number6",	"Cycle_Number7",	"Cycle_Number8", "Cycle_Number9",	"Cycle_Number10",
       "Cycle_Number11","Cycle_Number12",	"Cycle_Number13",	"Cycle_Number14","Cycle_Number15",	"Cycle_Number16",
-      "Cycle_Number17","Cycle_Number18",	"Cycle_Number19",	"Cycle_Number20","Cycle_Number21",	"Cycle_Number22",
-      "Cycle_Number23","Cycle_Number24",	"Cycle_Number25",	"Cycle_Number26","Cycle_Number27",	"Cycle_Number28",
+      "Cycle_Number17", "Cycle_Number18",	"Cycle_Number19",	"Cycle_Number20","Cycle_Number21",	"Cycle_Number22",
+      "Cycle_Number23", "Cycle_Number24",	"Cycle_Number25",	"Cycle_Number26","Cycle_Number27",	"Cycle_Number28",
       "Cycle_Number29", "Cycle_Number30",	"Cycle_Number31",	"Cycle_Number32","Cycle_Number33",	"Cycle_Number34",
-      "Cycle_Number35", "Cycle_Number36", "Cycle_Number37","Cycle_Number38","Cycle_Number39","Cycle_Number40",
+      "Cycle_Number35", "Cycle_Number36", "Cycle_Number37", "Cycle_Number38", "Cycle_Number39", "Cycle_Number40",
       "Cycle_Number41", "Cycle_Number42", "Cycle_Number43", "Cycle_Number44", "Cycle_Number45", "Cycle_Number46",
       "Cycle_Number47", "Cycle_Number48", "Cycle_Number49", "Cycle_Number50", "Cycle_Number51", "Cycle_Number52",
       "Cycle_Number53", "Cycle_Number54", "Cycle_Number55", "Cycle_Number56", "Cycle_Number57", "Cycle_Number58",
@@ -1115,18 +1071,8 @@ shinyAppServer <- function(input, output, session) {
 
 
 
-  #Reset uploaded file input and fitler widget selections to return map to its default view.
+  #Reset uploaded file input and filter widget selections to return map to its default view.
   observeEvent(input$reset, {
-    shinyjs::reset("platform")
-    updateSelectInput(session,
-                      inputId = "platform",
-                      label = "qPCR Platform",
-                      choices = c("None",
-                                  "StepOnePlus",
-                                  "Biomeme two3/Franklin",
-                                  "MIC/BioRad"),
-                      selected = "None")
-
     shinyjs::reset("qpcr_file")
     shinyjs::reset("metadata_file")
     shinyjs::reset("SCI_fluorescence_file")
@@ -1161,16 +1107,6 @@ shinyAppServer <- function(input, output, session) {
 
   # reset for add data box
   observeEvent(input$reset_add, {
-    shinyjs::reset("platform_add")
-    updateSelectInput(session,
-                      inputId = "platform_add",
-                      label = "qPCR Platform",
-                      choices = c("None",
-                                  "StepOnePlus",
-                                  "Biomeme two3/Franklin",
-                                  "MIC/BioRad"),
-                      selected = "None")
-
     shinyjs::reset("qpcr_file_add")
     shinyjs::reset("metadata_file_add")
     shinyjs::reset("SCI_fluorescence_file_add")
@@ -1198,9 +1134,7 @@ shinyAppServer <- function(input, output, session) {
 
       #Validate content of user uploaded files
       if (user_uploaded_standard_curve_file_validation(input$SC_fluorescence_file,
-                                                       input$SC_metadata_file,
-                                                       input$SC_platform) == TRUE)
-
+                                                       input$SC_metadata_file) == TRUE)
       {return(NULL)}
 
 
@@ -1444,16 +1378,6 @@ shinyAppServer <- function(input, output, session) {
   }))
 
   observeEvent(input$Uploaded_SC_reset, {
-    shinyjs::reset("SC_platform")
-    updateSelectInput(session,
-                      inputId = "SC_platform",
-                      label = "qPCR Platform",
-                      choices = c("None",
-                                  "StepOnePlus",
-                                  "Biomeme two3/Franklin",
-                                  "MIC/BioRad"),
-                      selected = "None")
-
     shinyjs::reset("SC_fluorescence_file")
     shinyjs::reset("SC_metadata_file")
     shinyjs::reset("SC_overview_table")
@@ -1726,28 +1650,6 @@ shinyAppServer <- function(input, output, session) {
                              "DA_assay_input",
                              choices = DA_assay_list(),
                              selected = 'nuBrook Trout TripleLock')})
-
-
-  #Update machine based on assay selection
-  # DA_runPlatform_list <- reactive({
-  #
-  #   if (input$DA_assay_input != 'None') {
-  #
-  #     data <- as.data.frame(uploaded_data())
-  #
-  #     updated_list <- data[data$assayName == input$DA_assay_input, ]
-  #
-  #     runPlatform_list <-  as.character(unique(updated_list$runPlatform))
-  #
-  #     return(runPlatform_list)}
-  #
-  #   else {return(NULL)}
-  # })
-  #
-  # observe({updatePickerInput(session,
-  #                            "DA_machine_input",
-  #                            choices = append('None', DA_runPlatform_list()),
-  #                            selected = 'None')})
 
 
   #Update project list based on assay selection
@@ -2075,14 +1977,6 @@ shinyAppServer <- function(input, output, session) {
       title = "Y Variable")
   })
 
-
-  # observe({
-  #   lstname <- names(InputDataset())
-  #   updateSelectInput(session = session,
-  #                     inputId = "SelectY",
-  #                     choices = lstname)
-  # })
-
   splitSlider <- reactive({
     input$Slider1 / 100
   })
@@ -2150,104 +2044,6 @@ shinyAppServer <- function(input, output, session) {
   # it's this line that causes problems
   output$CorrMatrix <-
     renderPrint(round(as.data.frame(correlationMatrix()), 4))
-  #
-
-  #
-  # #Code section for Linear Regression-----------------------------------------------------------------------------
-  #
-  # f <- reactive({
-  #   as.formula(paste(input$SelectY, "~."))
-  # })
-  #
-  # #observe({print(f())})
-  #
-  # # tmp_model <- lm(mpg ~., data = mtcars)
-  # # vardt <- as.data.frame(varImp(tmp_model, scale = FALSE))
-  # # varnames <- as.data.frame(rownames(vardt))
-  # # impvalue <- as.data.frame(vardt$Overall)
-  # # FinalVal <- cbind(varnames,impvalue)
-  #
-  #
-  #
-  #
-  #
-  # Linear_Model <- reactive({
-  #   lm(f(), data = trainingData())
-  # })
-  #
-  # output$Model <- renderPrint(summary(Linear_Model()))
-  # output$Model_new <-
-  #   renderPrint(
-  #     stargazer(
-  #       Linear_Model(),
-  #       type = "text",
-  #       title = "Model Results",
-  #       digits = 1,
-  #       out = "table1.txt"
-  #     )
-  #   )
-  #
-  # Importance <- reactive({
-  #   varImp(Linear_Model(), scale = FALSE)
-  # })
-  #
-  # tmpImp <- reactive({
-  #   #varImp(Linear_Model())
-  #   imp <- as.data.frame(varImp(Linear_Model()))
-  #   imp <- data.frame(overall = imp$Overall,
-  #                     names   = rownames(imp))
-  #   imp[order(imp$overall, decreasing = T),]
-  #
-  # })
-  #
-  # output$ImpVar <- renderPrint(tmpImp())
-  #
-  # price_predict <- reactive({
-  #   predict(Linear_Model(), testData())
-  # })
-  #
-  # tmp <- reactive({
-  #   tmp1 <- testData()
-  #   tmp1[, c(input$SelectY)]
-  # })
-  #
-  #
-  # actuals_preds <-
-  #   reactive({
-  #     data.frame(cbind(actuals = tmp(), predicted = price_predict()))
-  #   })
-  #
-  # Fit <-
-  #   reactive({
-  #     (
-  #       plot(
-  #         actuals_preds()$actuals,
-  #         actuals_preds()$predicted,
-  #         pch = 16,
-  #         cex = 1.3,
-  #         col = "blue",
-  #         main = "Best Fit Line",
-  #         xlab = "Actual",
-  #         ylab = "Predicted"
-  #       )
-  #     )
-  #   })
-  #
-  # output$Prediction <- renderPlot(Fit())
-  #
-  # output$residualPlots <- renderPlot({
-  #   par(mfrow = c(2, 2)) # Change the panel layout to 2 x 2
-  #   plot(Linear_Model())
-  #   par(mfrow = c(1, 1)) # Change back to 1 x 1
-  #
-  # })
-  #
-  # output$digest <- renderExplorer({
-  #
-  #   explorer(data = dd$data, demo = F)
-  #   #codebook(mtcars)
-  # })
-
 
 }
 

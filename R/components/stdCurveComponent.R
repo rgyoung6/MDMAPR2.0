@@ -73,7 +73,8 @@
 #' @importFrom stats quantile
 #' @importFrom stats residuals
 #' @importFrom bslib is_bs_theme
-NULL
+
+
 stdCurve <- function() {
   shinydashboard::tabItem(tabName = "stdCurve",
                           shiny::h1(shiny::strong("Standard Curve Analysis")),
@@ -91,11 +92,10 @@ stdCurve <- function() {
 
                                             shiny::p("To analyze standard curve data, upload a qPCR standard curve fluorescence file, and a filled in metadata file.",  style = "font-size:16px;"),
 
-
                                             fileInput("SC_fluorescence_file",
-                                                      "Upload Standard Curve Fluorescence File (csv/xlsx/xls)",
-                                                      multiple = FALSE,
-                                                      accept = c(".xlsx", ".xls", ".csv")),
+                                                             "Upload Standard Curve Fluorescence File (RDML)",
+                                                             multiple = FALSE,
+                                                             accept = c(".rdml")),
 
                                             fileInput("SC_metadata_file",
                                                       "Upload Metadata File (xlsx/xls)",
@@ -103,13 +103,13 @@ stdCurve <- function() {
                                                       accept = c(".xlsx", ".xls")),
 
                                             #Select qPCR run platform
-                                            selectInput(inputId = "SC_platform",
-                                                        label = "qPCR Platform",
-                                                        choices = c("None",
-                                                                    "StepOnePlus",
-                                                                    "Biomeme two3/Franklin",
-                                                                    "MIC/BioRad"),
-                                                        multiple = FALSE),
+#                                            selectInput(inputId = "SC_platform",
+#                                                        label = "qPCR Platform",
+#                                                        choices = c("None",
+#                                                                    "StepOnePlus",
+#                                                                    "Biomeme two3/Franklin",
+#                                                                    "MIC/BioRad"),
+#                                                        multiple = FALSE),
 
                                             numericInput(inputId = "LOQthres",
                                                          label="LOQ Coefficient of Variation Threshold",

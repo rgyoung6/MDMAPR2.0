@@ -89,21 +89,15 @@ dataImport <- function() {
                                  multiple = FALSE,
                                  accept = c(".rdml"), width="500px"),
                        shiny::fileInput("SCI_fluorescence_file",
-                                 "Upload Standard Curve Fluorescence File (csv/xlsx/xls)",
+                                 "Upload Standard Curve Fluorescence File (RDML)",
                                  multiple = FALSE,
-                                 accept = c(".xlsx", ".xls", ".csv"), width = "500px"),
+                                 accept = c(".rdml"), width = "500px"),
 
                        #Upload metadata file
                        shiny::fileInput("metadata_file", "Upload Filled MDMAPR Metadata File (xlsx)", width="500px",
                                  multiple = FALSE,
                                  accept = c(".xlsx", ".xls")),
 
-                       #Select qPCR run platform
-                       shiny::selectInput(inputId = "platform",
-                                   label = "qPCR Platform",
-                                   choices = c("None", "StepOnePlus", "Biomeme two3/Franklin", "MIC/BioRad"),
-                                   selected = "None",
-                                   multiple = FALSE, width="200px"),
                        shiny::textInput(inputId = "upload_data_name", label = "Upload Data Name", width="450px"),
 
                        shiny::fluidRow(shiny::column(12,textOutput("error_msg"))),
@@ -125,22 +119,15 @@ dataImport <- function() {
                                  accept = c(".rdml"), width="500px"),
                        # add standard curve
                        fileInput("SCI_fluorescence_file_add",
-                                 "Upload Standard Curve Fluorescence File (csv/xlsx/xls)",
+                                 "Upload Standard Curve Fluorescence File (RDML)",
                                  multiple = FALSE,
-                                 accept = c(".xlsx", ".xls", ".csv"), width = "500px"),
+                                 accept = c(".rdml"), width = "500px"),
 
                        #Upload metadata file
                        fileInput("metadata_file_add", "Upload Filled MDMAPR Metadata File (xlsx)",
                                  multiple = FALSE,
                                  accept = c(".xlsx", ".xls"), width="500px"),
 
-                       #Select qPCR run platform
-                       selectInput(inputId = "platform_add",
-                                   label = "qPCR Platform",
-                                   choices = c("None", "StepOnePlus", "Biomeme two3/Franklin", "MIC"),
-                                   selected = "None",
-                                   multiple = FALSE,
-                                   width="200px"),
                        textInput(inputId = "add_data_name", label = "Add Data Name", width="450px"),
                        fluidRow(column(10,textOutput("error_msg_add"))),
                        fluidRow(column(4, actionButton("submit_add",

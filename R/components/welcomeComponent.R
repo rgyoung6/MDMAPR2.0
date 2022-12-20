@@ -74,8 +74,6 @@
 #' @importFrom stats quantile
 #' @importFrom stats residuals
 #' @importFrom bslib is_bs_theme
-NULL
-
 
 welcomeComponent <- function() {
   shinydashboard::tabItem(tabName = "welcomepage",

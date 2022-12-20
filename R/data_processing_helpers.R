@@ -1,4 +1,4 @@
-#' @export
+
 df_formatting_by_target <- function(fluorescence_df, process_type){
 
   # subset the data with the columns we need for the raw fluorescence
@@ -19,8 +19,11 @@ df_formatting_by_target <- function(fluorescence_df, process_type){
 }
 
 #################### MAIN FUNCTION ####################
-#' @export
+
 process_Multiplexed_RDML <- function (rdml_file) {
+
+print("Beginning of the process_Multiplexed_RDML function")
+
   # read in rdml file
   raw_data <- RDML$new(filename = rdml_file)
   #pull all the fluorescence data
@@ -29,12 +32,17 @@ process_Multiplexed_RDML <- function (rdml_file) {
   list_of_fdata = split(fdata, f = fdata$target)
   # apply the dataframe formatting function to all dataframes in the list
   list_to_return <- lapply(list_of_fdata, df_formatting_by_target)
+
+print("End of the process_Multiplexed_RDML function")
+
   return (list_to_return)
 }
 
 ##############Formatting the metadata File#################
-#' @export
+
 format_qPCR_metadata <- function(metadataFile) {
+
+print("Beginnig of the format_qPCR_metadata function")
 
   #Read in sheets
   project_Table <- read_xlsx(metadataFile,sheet = 1)
@@ -43,27 +51,25 @@ format_qPCR_metadata <- function(metadataFile) {
   results_Table <- read_xlsx(metadataFile, sheet = 4)
   standardCurve_Table <- read_xlsx(metadataFile, sheet = 5)
 
-
   #Creating metadata table
   metadata_table <-
     distinct(left_join(assay_Table, standardCurve_Table[, c("standardCurveID", "assayID", "standardCurveName", "SCdate", "SCrecordedBy", "SCdataNotes")], by = "assayID"))
-
   metadata_table <-  left_join(results_Table, metadata_table, by = "assayID")
-
   metadata_table <- left_join(metadata_table, replicate_Table, by = "extractID")
-
   metadata_table <- left_join(metadata_table, project_Table, by = "stationID")
-
 
   #Organize columns
   metadata_table <- as.data.frame(metadata_table[, c(
     "resultID","runID", "assayID","pcrChemistryID","extractID","wellLocation","sampleName", "copyNumber","control","userProvidedThresholdValue", "userProvidedCqValue","runRecordedBy", "runDate","runTime","runPlatform","machineID","reactionConditions","reactionVolume","templateAmount","forwardPrimerBatch","reversePrimerBatch","dNTPConcentration", "primerConcentration","probeConcentration","Mg2+Concentration","polymeraseBatch","polymeraseConcentrations","thermocyclerParameters","pcrDataNotes","taxonID","establishmentMeans","assayName","assayOwnership","assayDescription","assayCitation","assayDate","geneTarget","geneSymbol","dilutions","replicates","primerR","primerF","probe","ampliconLength (bp)","probeFluorescentTag","dye(s)","quencher","probeModification","kingdom","phylum","class","order","family","genus","subgenus","species","vernacularName","organismScope","replicateID","extractName","analyst", "extractionDate", "extractionTime", "location", "extractionMethod", "methodCitation", "extractionNotes","tubePlateID","frozen", "fixed","dnaStorageLocation","extractMethodOfStorage","dnaVolume","quantificationMethod", "concentration(ng/ul)","stationID","collectorName","replicateName","collectionDate","collectionTime","storageID","DateOfStorage","methodOfStorage","minimumElevationInMeters","maximumElevationInMeters","verbatimElevation","minimumDepthInMeters","maximumDepthInMeters","verbatimDepth", "flowRate(m/s)", "filterType","filtrationDuration(mins)","volumeFiltered","processLocation","replicationNumber","riparianVegetationPercentageCover","dissolvedOxygen(mg/L)","waterTemperature(C)","pH","TSS(mg/L)","EC(uS/cm)","turbidity(NTU)","discharge","tide","chlorophyl","salinity(ppt)","contaminants(ng/g)","traceMetals(mg/kg)","organicContent(%)","microbialActivity","grainSize","replicateDataNotes","siteID","stationName","decimalLongitude","decimalLatitude","geographicRegionID","locality","estimatedPerimeter","estimatedSurfaceArea(m2)","siteType","siteLength(m2)","projectID","continent","country","stateProvince","municipality","projectCreationDate","projectName", "projectRecordedBy","projectOwner","projectContactEmail","projectDescription","InstitutionID","projectDataNotes","standardCurveID","standardCurveName","SCdate","SCrecordedBy","SCdataNotes")])
+
+print("End of the format_qPCR_metadata function")
+
   return(metadata_table)
 
 }
 
 ############### Format the Standard Curve Metadata ##################
-#' @export
+
 format_std_curve_metadata <- function (standardCurve_metadata) {
   standardCurve_Table <- read_excel(standardCurve_metadata, sheet = 5)
   standardCurve_Table <- as.data.frame(standardCurve_Table[, c("SCresultID",
@@ -106,7 +112,7 @@ format_std_curve_metadata <- function (standardCurve_metadata) {
 }
 
 ############### Removing the control records##################
-#' @export
+
 remove_null_records <- function(meta_data, fluor_file_list){
   # This function will change the list and metadata files in place
   meta_data_name = deparse(substitute(meta_data))
@@ -124,7 +130,7 @@ remove_null_records <- function(meta_data, fluor_file_list){
   return(cleaned_data)
 }
 
-#' @export
+
 remove_null_records_test <- function(formatted_metadata, raw_multiplex_data_list){
   # This function will change the list and metadata files in place
   meta_data_name = deparse(substitute(formatted_metadata))
@@ -146,105 +152,8 @@ remove_null_records_test <- function(formatted_metadata, raw_multiplex_data_list
 }
 
 
-############### Calculating the Threshold Value ##################
-#calculate_second_deriv_threshold <- function(fluorescence_values_df) {
-
-#   fluorescence_values <- as.data.frame(t(fluorescence_values_df))
-#
-#   # ensure all values are NUMERIC
-#   fluorescence_values[] <- lapply(fluorescence_values, as.numeric)
-#
-#   #New table with threshold data
-#   thresholdData <- as.data.frame(matrix(nrow = ncol(fluorescence_values) , ncol = 1))
-#   colnames(thresholdData) <- c("systemCalculatedThresholdValue")
-#   rownames(thresholdData) <- colnames(fluorescence_values)
-#
-#   for (runSample in 1:ncol(fluorescence_values)) {
-#
-#     #Get the total number of thremocycler cycles for this sample
-#     number_of_cycles <- length(fluorescence_values [,runSample])
-#
-#     #Set the initial reference absorbance to the minimum absorbance for the sample
-#     reference_absorbance_value <- as.numeric(min(fluorescence_values[, runSample]))
-#
-#     #Set the initial absorbance cycle to the cycle with the minimum absorbance value
-#     place_holder_cycle = which.min(fluorescence_values[, runSample])
-#
-#     #Calculate the absorbance range for the sample to be able to assess the percent change from cycle to cycle
-#     absorb_range = as.numeric(max(fluorescence_values[, runSample])) - as.numeric(min(fluorescence_values[, runSample]))
-#
-#
-#     #Step through the data points for the cycles from the minimum value to the end of the cycles to see if the data is inceasing within a certain percentage as compared to the total absorbance range for the sample
-#     for (cycle_number_counter in which.min(fluorescence_values[, runSample]):length(fluorescence_values[, runSample])) {
-#
-#       #Calculate the difference between the reference (first, initially set to the minimum value for the dataset) value and the test value (current value in the data series for this loop)
-#       difference = as.numeric(reference_absorbance_value - as.numeric(fluorescence_values[cycle_number_counter, runSample]))
-#
-#       #Check to see if the difference between the reference and the test divided by the total range is greater than 0.01.
-#       #NOTE: could have the minimum variation between successive data points a user defined value here we use less than 1%
-#       #If yes then making the place holder cycle equal to this cycle number as I will then only use data after this cycle to calculate the threshold.
-#       if((difference/absorb_range) >= 0.01) {
-#       # if absorbance goes below, it shouldn't go below 1% (absolute value of place holder cycle - current cycle, divide by the maximum between these two)
-#
-#         #Update place holder value cycle number
-#         place_holder_cycle <- cycle_number_counter
-#       }
-#
-#       #Setting the reference equal to the value at this loop to represent the reference for the next loop where the test value will be incremented to the absorbance value for the next cycle for the sample
-#       reference_absorbance_value <- as.numeric(fluorescence_values[cycle_number_counter, runSample])
-#
-#     } # Closing loop
-#
-#     ########################### Obtaining the threshold value ###########################
-#
-#     #NOTE: could have the minimum number of data points to calculate the threshold as a user defined value
-#     #Finally, checking to see if more than 75% of the data points passed these quality checks for use in calculating the threshold. if not then bad data no threshold calculation is conducted.
-#     if ((place_holder_cycle/number_of_cycles) < 0.75) {
-#
-#       #Subset dataframe to plot it
-#       data_to_plot <- as.data.frame(as.numeric(t(fluorescence_values[, runSample])))
-#
-#       data_to_plot <- cbind(as.data.frame(c(1:number_of_cycles)), data_to_plot)
-#
-#       data_to_plot <- data_to_plot[-c(1:place_holder_cycle), ]
-#
-#       # This is the section where I get the second derivative of the curve and determine the value at which we will set the threshold
-#
-#       deriv <- function(x, y)
-#         diff(y) / diff(x)
-#
-#       middle_pts <- function(x)
-#         x[-1] - diff(x) / 2
-#
-#       second_d <- deriv(middle_pts(data_to_plot[, 1]), deriv(data_to_plot[, 1], data_to_plot[, 2]))
-#
-#       #Getting the max value of the second derivative data set. This will represent the points between the values on the curve between the end of the noise data and the end of the data set.
-#       #So we need to add the max value index to the placeholder and then add one to round up to the next value to get the index (or cycle number) on the original data set.
-#       max_deriv_value_index <- which.max(second_d)
-#
-#       #The theshold value at the cycle determined by the double derivitave is...
-#       #we need to add one
-#       threshold_value <- fluorescence_values[(place_holder_cycle + max_deriv_value_index +1),runSample]
-#
-#
-#       #Add threshold value to dataframe
-#       thresholdData$systemCalculatedThresholdValue[runSample] <- threshold_value
-#
-#     }
-#
-#     #If no threshold value can be computed
-#     else {thresholdData$systemCalculatedThresholdValue[runSample] <- "Unable to Determine Threshold" }
-#   }
-#   thresholdData$wellLocation <- rownames(thresholdData)
-#   fluorescence_values_df <- as.data.frame(fluorescence_values_df)
-#   fluorescence_values_df$wellLocation <- rownames(as.data.frame(fluorescence_values_df))
-#   fluorescence_values_df <- merge(fluorescence_values_df, thresholdData, by="wellLocation")
-#   rownames(fluorescence_values_df) <- fluorescence_values_df$wellLocation
-#   return(fluorescence_values_df)
-# }
 
 
-#' @export
 calculate_second_deriv_threshold <- function(fluorescence_values_df){
   fluorescence_values <- as.data.frame(t(fluorescence_values_df))
   # now each column is a sample and each row is a cycle
@@ -330,31 +239,62 @@ calculate_second_deriv_threshold <- function(fluorescence_values_df){
 }
 
 ############### Calculating the Cq Value ##################
-#' @export
+
 add_Cq <- function(fluorescence_df, threshold_val_column, Cq_val_col){
+
+print("data_processing_helpers - add_Cq function - BEGIN ")
+
   #fluorescence_df contains: fluorescence values (each row is one sample), the System Calculated Threshold and the user Provided Threshold. The user must specify which column to use for the threshold calculation.
   # need to handle, if the user does not prove threshold values.
 
   # subset the data with only the fluorescence values
   flu_data_subset <- subset(fluorescence_df, select=c(grep("Cycle_Number", colnames(fluorescence_df))))
 
+print("data_processing_helpers - add_Cq function - Here 1 ")
+
   cycle_number <- seq(ncol(flu_data_subset))
+
+print("data_processing_helpers - add_Cq function - Here 2")
 
   #Number of samples
   number_of_rows <- nrow(fluorescence_df)
+
+print("data_processing_helpers - add_Cq function - Here 3 ")
+
   for (i in 1:number_of_rows){
     # for each sample assess if it is unable to determine the threshold. if so, Cq value is 40. If there is a value, calculate the Cq.
-    if (fluorescence_df[[threshold_val_column]][i] == "Unable to Determine Threshold")
-    {fluorescence_df[[Cq_val_col]][i] <- 40}
-    else{
+
+print("data_processing_helpers - add_Cq function - Here 4 ")
+
+    if (fluorescence_df[[threshold_val_column]][i] == "Unable to Determine Threshold"){
+
+print("data_processing_helpers - add_Cq function - Here 5")
+
+      fluorescence_df[[Cq_val_col]][i] <- 40
+
+print("data_processing_helpers - add_Cq function - Here 6")
+
+    }else{
+
+print("data_processing_helpers - add_Cq function - Here 7")
+
       fluorescence_df[[Cq_val_col]][i] <- as.numeric(as.character(th.cyc(cycle_number,as.numeric(flu_data_subset[i, ]),r = round(as.numeric(fluorescence_df[[threshold_val_column]])[i], 3),linear = TRUE)[1]))
-    }}
+
+print("data_processing_helpers - add_Cq function - Here 8")
+
+    }
+  }
+
+print("data_processing_helpers - add_Cq function - Here 9")
 
   fluorescence_df[[Cq_val_col]] <- as.numeric(fluorescence_df[[Cq_val_col]])
+
+print("data_processing_helpers - add_Cq function - END ")
+
   return(fluorescence_df)}
 
 ############### Calculating the Copy Number ##################
-#' @export
+
 calculate_copy_number <- function(standard_curve_flu, experimental_flu){
   regression_line <- lm(log(standardConc) ~ systemCalculatedCqValue, standard_curve_flu, na.action=na.exclude)
   testing_cq <- as.data.frame(experimental_flu$systemCalculatedCqValue)
@@ -367,7 +307,7 @@ calculate_copy_number <- function(standard_curve_flu, experimental_flu){
 }
 
 ############### Functions for processing the standard curve flu ##################
-#' @export
+
 # For MIC
 process_MIC_raw_data <- function(raw_fluorescence){
   raw_fluorescence <- as.data.frame(t(raw_fluorescence[, 2:ncol(raw_fluorescence)]))
@@ -384,7 +324,7 @@ process_MIC_raw_data <- function(raw_fluorescence){
 }
 
 # For Biomeme
-#' @export
+
 process_biomeme_raw_data <- function(raw_fluorescence){
   #Creating dataframe with fluorescence values from biomem raw qPCR file
   end_row <-(which(grepl('Raw Fluorescence', raw_fluorescence$Run.Name))) - 2
@@ -403,7 +343,7 @@ process_biomeme_raw_data <- function(raw_fluorescence){
 }
 
 ############### Functions for processing merged file ##################
-#' @export
+
 merged_file_processing <- function(merged_file, dataset_name){
   # handling extreme cq values
 
