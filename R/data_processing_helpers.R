@@ -1,18 +1,22 @@
 
-df_formatting_by_target <- function(fluorescence_df, process_type){
+df_formatting_by_target <- function(fluorescence_df){
 
+  #Build a unique ID to mirror the metadata file unique ID
+  fluorescence_df <- fluorescence_df[, c( "exp.id", "run.id", "react.id","fluor")]
+  built_unique_ID<-paste0(fluorescence_df$exp.id,"|",fluorescence_df$run.id,"|", fluorescence_df$react.id)
+  built_unique_ID<-paste0(fluorescence_df$exp.id,"_",fluorescence_df$run.id,"_", fluorescence_df$react.id)
+  fluorescence_df<-as.data.frame(cbind(built_unique_ID,fluorescence_df$fluor))
   # subset the data with the columns we need for the raw fluorescence
-  fluorescence_df <- fluorescence_df[, c( "position", "fluor", "react.id")]
   # split by position
-  formatted_df <- do.call('data.frame', split(fluorescence_df, fluorescence_df$position))
+  formatted_df <- do.call('data.frame', split(fluorescence_df, fluorescence_df$built_unique_ID))
   # remove columns with just the well position
   formatted_df <- Filter(function(x)(length(unique(x))>1), formatted_df)
   # rename column with just the delimiter
   colnames(formatted_df) <- sub("\\..*", "", colnames(formatted_df))
   # ensure the well numbers and cycle are captured as the first row in the data frame
   formatted_df <- rbind(colnames(formatted_df), formatted_df)
-  # rownames should match the appropriate data (wellLocation then cycle numbers)
-  rownames(formatted_df) <- c("wellLocation", paste0("Cycle_Number", 1:(nrow(formatted_df)-1)))
+  # rownames should match the appropriate data (built_unique_ID then cycle numbers)
+  rownames(formatted_df) <- c("built_unique_ID", paste0("Cycle", 1:(nrow(formatted_df)-1)))
   # transpose the df such that each well is a row
   formatted_df <- as.data.frame(t(formatted_df))
   return(formatted_df)
@@ -22,50 +26,35 @@ df_formatting_by_target <- function(fluorescence_df, process_type){
 
 process_Multiplexed_RDML <- function (rdml_file) {
 
-print("Beginning of the process_Multiplexed_RDML function")
+print("Beginning of the data_processing_helpers process_Multiplexed_RDML function")
 
   # read in rdml file
   raw_data <- RDML$new(filename = rdml_file)
+
   #pull all the fluorescence data
   fdata <- as.data.frame(raw_data$GetFData(long.table = T))
-  # subset the data by the target
-  list_of_fdata = split(fdata, f = fdata$target)
-  # apply the dataframe formatting function to all dataframes in the list
-  list_to_return <- lapply(list_of_fdata, df_formatting_by_target)
+
+  #Build a unique ID to mirror the metadata file unique ID
+  fdata <- fdata[, c( "exp.id", "run.id", "react.id","fluor")]
+  built_unique_ID<-paste0(fdata$exp.id,"_",fdata$run.id,"_", fdata$react.id)
+  fdata<-as.data.frame(cbind(built_unique_ID,fdata$fluor))
+
+  # split by position
+  formatted_df <- do.call('data.frame', split(fdata, fdata$built_unique_ID))
+  # remove columns with just the well position
+  formatted_df <- Filter(function(x)(length(unique(x))>1), formatted_df)
+  # rename column with just the delimiter
+  colnames(formatted_df) <- sub("\\..*", "", colnames(formatted_df))
+  # ensure the well numbers and cycle are captured as the first row in the data frame
+  formatted_df <- rbind(colnames(formatted_df), formatted_df)
+  # rownames should match the appropriate data (resultWellLoc then cycle numbers)
+  rownames(formatted_df) <- c("built_unique_ID", paste0("Cycle", 1:(nrow(formatted_df)-1)))
+  # transpose the df such that each well is a row
+  formatted_df <- as.data.frame(t(formatted_df))
 
 print("End of the process_Multiplexed_RDML function")
 
-  return (list_to_return)
-}
-
-##############Formatting the metadata File#################
-
-format_qPCR_metadata <- function(metadataFile) {
-
-print("Beginnig of the format_qPCR_metadata function")
-
-  #Read in sheets
-  project_Table <- read_xlsx(metadataFile,sheet = 1)
-  replicate_Table <- read_xlsx(metadataFile,sheet = 2)
-  assay_Table <-  read_xlsx(metadataFile, sheet = 3)
-  results_Table <- read_xlsx(metadataFile, sheet = 4)
-  standardCurve_Table <- read_xlsx(metadataFile, sheet = 5)
-
-  #Creating metadata table
-  metadata_table <-
-    distinct(left_join(assay_Table, standardCurve_Table[, c("standardCurveID", "assayID", "standardCurveName", "SCdate", "SCrecordedBy", "SCdataNotes")], by = "assayID"))
-  metadata_table <-  left_join(results_Table, metadata_table, by = "assayID")
-  metadata_table <- left_join(metadata_table, replicate_Table, by = "extractID")
-  metadata_table <- left_join(metadata_table, project_Table, by = "stationID")
-
-  #Organize columns
-  metadata_table <- as.data.frame(metadata_table[, c(
-    "resultID","runID", "assayID","pcrChemistryID","extractID","wellLocation","sampleName", "copyNumber","control","userProvidedThresholdValue", "userProvidedCqValue","runRecordedBy", "runDate","runTime","runPlatform","machineID","reactionConditions","reactionVolume","templateAmount","forwardPrimerBatch","reversePrimerBatch","dNTPConcentration", "primerConcentration","probeConcentration","Mg2+Concentration","polymeraseBatch","polymeraseConcentrations","thermocyclerParameters","pcrDataNotes","taxonID","establishmentMeans","assayName","assayOwnership","assayDescription","assayCitation","assayDate","geneTarget","geneSymbol","dilutions","replicates","primerR","primerF","probe","ampliconLength (bp)","probeFluorescentTag","dye(s)","quencher","probeModification","kingdom","phylum","class","order","family","genus","subgenus","species","vernacularName","organismScope","replicateID","extractName","analyst", "extractionDate", "extractionTime", "location", "extractionMethod", "methodCitation", "extractionNotes","tubePlateID","frozen", "fixed","dnaStorageLocation","extractMethodOfStorage","dnaVolume","quantificationMethod", "concentration(ng/ul)","stationID","collectorName","replicateName","collectionDate","collectionTime","storageID","DateOfStorage","methodOfStorage","minimumElevationInMeters","maximumElevationInMeters","verbatimElevation","minimumDepthInMeters","maximumDepthInMeters","verbatimDepth", "flowRate(m/s)", "filterType","filtrationDuration(mins)","volumeFiltered","processLocation","replicationNumber","riparianVegetationPercentageCover","dissolvedOxygen(mg/L)","waterTemperature(C)","pH","TSS(mg/L)","EC(uS/cm)","turbidity(NTU)","discharge","tide","chlorophyl","salinity(ppt)","contaminants(ng/g)","traceMetals(mg/kg)","organicContent(%)","microbialActivity","grainSize","replicateDataNotes","siteID","stationName","decimalLongitude","decimalLatitude","geographicRegionID","locality","estimatedPerimeter","estimatedSurfaceArea(m2)","siteType","siteLength(m2)","projectID","continent","country","stateProvince","municipality","projectCreationDate","projectName", "projectRecordedBy","projectOwner","projectContactEmail","projectDescription","InstitutionID","projectDataNotes","standardCurveID","standardCurveName","SCdate","SCrecordedBy","SCdataNotes")])
-
-print("End of the format_qPCR_metadata function")
-
-  return(metadata_table)
-
+  return (formatted_df)
 }
 
 ############### Format the Standard Curve Metadata ##################
@@ -76,7 +65,7 @@ format_std_curve_metadata <- function (standardCurve_metadata) {
                                                                "runID",
                                                                "pcrChemistryID",
                                                                "standardCurveID",
-                                                               "wellLocation",
+                                                               "mdmaprThres",
                                                                "sampleName",
                                                                "copyNumber",
                                                                "control",
@@ -113,22 +102,22 @@ format_std_curve_metadata <- function (standardCurve_metadata) {
 
 ############### Removing the control records##################
 
-remove_null_records <- function(meta_data, fluor_file_list){
-  # This function will change the list and metadata files in place
-  meta_data_name = deparse(substitute(meta_data))
-  fluor_file_list_name = deparse(substitute(fluor_file_list))
-  if(length(which(grepl("null", tolower(meta_data$sampleName))))!=0){
-    # get the position of the records that have null in the sample names
-    control_well_locations <- as.character(meta_data$wellLocation[which(tolower(meta_data$sampleName)=="null")])
-    # remove these records from the fluorescence files (if present)
-    fluor_file_list <- lapply(fluor_file_list, function(x) x[-c(which(as.character(x$wellLocation) %in%
-                                                                        control_well_locations)),])
-    # remove these records from the metadata
-    meta_data <- meta_data[-c(which(grepl("null", tolower(meta_data$sampleName)))), ]}
-  # create a list to store these elements (they will be unlisted and brought back into the global environment)
-  cleaned_data <- list(fluor_file_list, meta_data)
-  return(cleaned_data)
-}
+#remove_null_records <- function(meta_data, fluor_file_list){
+#  # This function will change the list and metadata files in place
+#  meta_data_name = deparse(substitute(meta_data))
+#  fluor_file_list_name = deparse(substitute(fluor_file_list))
+#  if(length(which(grepl("null", tolower(meta_data$sampleName))))!=0){
+#    # get the position of the records that have null in the sample names
+#    control_well_locations <- as.character(meta_data$mdmaprThres[which(tolower(meta_data$sampleName)=="null")])
+#    # remove these records from the fluorescence files (if present)
+#    fluor_file_list <- lapply(fluor_file_list, function(x) x[-c(which(as.character(x$mdmaprThres) %in%
+#                                                                        control_well_locations)),])
+#    # remove these records from the metadata
+#    meta_data <- meta_data[-c(which(grepl("null", tolower(meta_data$sampleName)))), ]}
+#  # create a list to store these elements (they will be unlisted and brought back into the global environment)
+#  cleaned_data <- list(fluor_file_list, meta_data)
+#  return(cleaned_data)
+#}
 
 
 remove_null_records_test <- function(formatted_metadata, raw_multiplex_data_list){
@@ -137,9 +126,9 @@ remove_null_records_test <- function(formatted_metadata, raw_multiplex_data_list
   fluor_file_list_name = deparse(substitute(raw_multiplex_data_list))
   if(length(which(grepl("null", tolower(formatted_metadata$sampleName))))!=0){
     # get the position of the records that have null in the sample names
-    control_well_locations <- as.character(formatted_metadata$wellLocation[which(tolower(formatted_metadata$sampleName)=="null")])
+    control_well_locations <- as.character(formatted_metadata$mdmaprThres[which(tolower(formatted_metadata$sampleName)=="null")])
     # remove these records from the fluorescence files (if present)
-    raw_multiplex_data_list <- lapply(raw_multiplex_data_list, function(x) x[-c(which(as.character(x$wellLocation) %in%
+    raw_multiplex_data_list <- lapply(raw_multiplex_data_list, function(x) x[-c(which(as.character(x$mdmaprThres) %in%
                                                                                         control_well_locations)),])
     # remove these records from the metadata
     # create a list to store these elements (they will be unlisted and brought back into the global environment)
@@ -152,19 +141,19 @@ remove_null_records_test <- function(formatted_metadata, raw_multiplex_data_list
 }
 
 
-
+########## Second Derivative Threshold Calculation #####################
 
 calculate_second_deriv_threshold <- function(fluorescence_values_df){
+
   fluorescence_values <- as.data.frame(t(fluorescence_values_df))
   # now each column is a sample and each row is a cycle
-
 
   # ensure all values are NUMERIC
   fluorescence_values[] <- lapply(fluorescence_values, as.numeric)
 
   #New table with threshold data
   thresholdData <- as.data.frame(matrix(nrow = ncol(fluorescence_values) , ncol = 1))
-  colnames(thresholdData) <- c("systemCalculatedThresholdValue")
+  colnames(thresholdData) <- c("mdmaprThres")
   rownames(thresholdData) <- colnames(fluorescence_values)
 
   # for each sample (column), find the lowest absorbance - this will be our minimum
@@ -192,8 +181,9 @@ calculate_second_deriv_threshold <- function(fluorescence_values_df){
       }
     }
 
+    #Jan 2 - changed the systemCalculatedThresholdValue to the variable mdmaprThres reflective of the single flat file
     if (is.null(exp_phase_subset)|length(exp_phase_subset)<2){
-      thresholdData$systemCalculatedThresholdValue[runSample] <- "Unable to Determine Threshold"
+      thresholdData$mdmaprThres[runSample] <- "Unable to Determine Threshold"
     }
 
     else{
@@ -227,14 +217,15 @@ calculate_second_deriv_threshold <- function(fluorescence_values_df){
 
 
       #Add threshold value to dataframe
-      thresholdData$systemCalculatedThresholdValue[runSample] <- threshold_value
+      thresholdData$mdmaprThres[runSample] <- threshold_value
     }
   }
-  thresholdData$wellLocation <- rownames(thresholdData)
+  thresholdData$built_unique_ID <- rownames(thresholdData)
   fluorescence_values_df <- as.data.frame(fluorescence_values_df)
-  fluorescence_values_df$wellLocation <- rownames(as.data.frame(fluorescence_values_df))
-  fluorescence_values_df <- merge(fluorescence_values_df, thresholdData, by="wellLocation")
-  rownames(fluorescence_values_df) <- fluorescence_values_df$wellLocation
+  fluorescence_values_df$built_unique_ID <- rownames(as.data.frame(fluorescence_values_df))
+  fluorescence_values_df <- merge(fluorescence_values_df, thresholdData, by="built_unique_ID")
+  rownames(fluorescence_values_df) <- fluorescence_values_df$built_unique_ID
+
   return(fluorescence_values_df)
 }
 
@@ -244,54 +235,30 @@ add_Cq <- function(fluorescence_df, threshold_val_column, Cq_val_col){
 
 print("data_processing_helpers - add_Cq function - BEGIN ")
 
-  #fluorescence_df contains: fluorescence values (each row is one sample), the System Calculated Threshold and the user Provided Threshold. The user must specify which column to use for the threshold calculation.
-  # need to handle, if the user does not prove threshold values.
-
   # subset the data with only the fluorescence values
-  flu_data_subset <- subset(fluorescence_df, select=c(grep("Cycle_Number", colnames(fluorescence_df))))
+  flu_data_subset <- fluorescence_df[,grep("Cycle", names(fluorescence_df), value = TRUE)]
 
-print("data_processing_helpers - add_Cq function - Here 1 ")
+  for (i in 1:nrow(fluorescence_df)){
 
-  cycle_number <- seq(ncol(flu_data_subset))
-
-print("data_processing_helpers - add_Cq function - Here 2")
-
-  #Number of samples
-  number_of_rows <- nrow(fluorescence_df)
-
-print("data_processing_helpers - add_Cq function - Here 3 ")
-
-  for (i in 1:number_of_rows){
-    # for each sample assess if it is unable to determine the threshold. if so, Cq value is 40. If there is a value, calculate the Cq.
-
-print("data_processing_helpers - add_Cq function - Here 4 ")
-
-    if (fluorescence_df[[threshold_val_column]][i] == "Unable to Determine Threshold"){
-
-print("data_processing_helpers - add_Cq function - Here 5")
-
-      fluorescence_df[[Cq_val_col]][i] <- 40
-
-print("data_processing_helpers - add_Cq function - Here 6")
-
+    if (is.na(fluorescence_df[i,threshold_val_column])){
+      fluorescence_df[i,Cq_val_col] <- NA
+    }else if(fluorescence_df[i,threshold_val_column]== "Unable to Determine Threshold"){
+      #If the threshold value was unable to be determined then set the Cq to the
+      # max cycle number for the experiment
+      fluorescence_df[i,Cq_val_col] <- ncol(flu_data_subset[i,])
     }else{
-
-print("data_processing_helpers - add_Cq function - Here 7")
-
-      fluorescence_df[[Cq_val_col]][i] <- as.numeric(as.character(th.cyc(cycle_number,as.numeric(flu_data_subset[i, ]),r = round(as.numeric(fluorescence_df[[threshold_val_column]])[i], 3),linear = TRUE)[1]))
-
-print("data_processing_helpers - add_Cq function - Here 8")
-
+      fluorescence_df[i,Cq_val_col] <- as.numeric(as.character(
+        th.cyc(seq(1:ncol(flu_data_subset)),
+               as.numeric(flu_data_subset[i, ]),
+               r = round(as.numeric(fluorescence_df[i,threshold_val_column]), 3),
+               linear = TRUE)[1]))
     }
   }
 
-print("data_processing_helpers - add_Cq function - Here 9")
-
-  fluorescence_df[[Cq_val_col]] <- as.numeric(fluorescence_df[[Cq_val_col]])
-
 print("data_processing_helpers - add_Cq function - END ")
 
-  return(fluorescence_df)}
+  return(fluorescence_df)
+}
 
 ############### Calculating the Copy Number ##################
 
@@ -301,50 +268,51 @@ calculate_copy_number <- function(standard_curve_flu, experimental_flu){
   colnames(testing_cq) <- "systemCalculatedCqValue"
   predictions <- as.data.frame(predict(regression_line, testing_cq))
   colnames(predictions) <- "logDNACopyNumber"
-  predictions$wellLocation <- experimental_flu$wellLocation
-  predictions$rSquared <- rep(as.numeric(format(summary(regression_line)$r.squared, digits=3)),length(predictions$wellLocation))
+  predictions$mdmaprThres <- experimental_flu$mdmaprThres
+  predictions$rSquared <- rep(as.numeric(format(summary(regression_line)$r.squared, digits=3)),length(predictions$mdmaprThres))
   return(predictions)
 }
 
 ############### Functions for processing the standard curve flu ##################
 
 # For MIC
-process_MIC_raw_data <- function(raw_fluorescence){
-  raw_fluorescence <- as.data.frame(t(raw_fluorescence[, 2:ncol(raw_fluorescence)]))
-  # add consistent column names
-  #Changing column names to consistent with naming convention in database
-  total_runs <- ncol(raw_fluorescence)
-  colnames(raw_fluorescence) <- c(paste0("Cycle_Number", 1:total_runs))
-  # add a column for merging with metadata
-  raw_fluorescence$wellLocation <- as.numeric(gsub("[^0-9]", "", rownames(raw_fluorescence)))
-  # move wellLocation to the front
-  raw_fluorescence <- as.data.frame(raw_fluorescence[,c(ncol(raw_fluorescence),1:ncol(raw_fluorescence)-1)])
-  print(paste0("number of wells: ", nrow(raw_fluorescence), ", number of cycles: ", ncol(raw_fluorescence)-1))
-  return(raw_fluorescence)
-}
+#process_MIC_raw_data <- function(raw_fluorescence){
+#  raw_fluorescence <- as.data.frame(t(raw_fluorescence[, 2:ncol(raw_fluorescence)]))
+#  # add consistent column names
+#  #Changing column names to consistent with naming convention in database
+#  total_runs <- ncol(raw_fluorescence)
+#  colnames(raw_fluorescence) <- c(paste0("Cycle_Number", 1:total_runs))
+#  # add a column for merging with metadata
+#  raw_fluorescence$wellLocation <- as.numeric(gsub("[^0-9]", "", rownames(raw_fluorescence)))
+#  # move wellLocation to the front
+#  raw_fluorescence <- as.data.frame(raw_fluorescence[,c(ncol(raw_fluorescence),1:ncol(raw_fluorescence)-1)])
+#  print(paste0("number of wells: ", nrow(raw_fluorescence), ", number of cycles: ", ncol(raw_fluorescence)-1))
+#  return(raw_fluorescence)
+#}
 
 # For Biomeme
 
-process_biomeme_raw_data <- function(raw_fluorescence){
-  #Creating dataframe with fluorescence values from biomem raw qPCR file
-  end_row <-(which(grepl('Raw Fluorescence', raw_fluorescence$Run.Name))) - 2
-  raw_fluorescence <- raw_fluorescence[11:end_row, 2:41]
-  #Changing column names to consistent with naming convention in database
-  total_runs <- ncol(raw_fluorescence)
-  colnames(raw_fluorescence) <- c(paste0("Cycle_Number", 1:total_runs))
-  #change all values to numeric
-  cols = c(1:total_runs)
-  raw_fluorescence[, cols] <- apply(raw_fluorescence[, cols], 2, function(x)  as.numeric(as.character(x)))
-  # add wellLocation (key for merging)
-  raw_fluorescence$wellLocation <- fluorescence_file[11:end_row, 1]
-  raw_fluorescence <- as.data.frame(raw_fluorescence[,c(ncol(raw_fluorescence),1:ncol(raw_fluorescence)-1)])
-  print(paste0("number of wells: ", nrow(raw_fluorescence), ", number of cycles: ", ncol(raw_fluorescence)-1))
-  return (raw_fluorescence)
-}
+#process_biomeme_raw_data <- function(raw_fluorescence){
+#  #Creating dataframe with fluorescence values from biomem raw qPCR file
+#  end_row <-(which(grepl('Raw Fluorescence', raw_fluorescence$Run.Name))) - 2
+#  raw_fluorescence <- raw_fluorescence[11:end_row, 2:41]
+#  #Changing column names to consistent with naming convention in database
+#  total_runs <- ncol(raw_fluorescence)
+#  colnames(raw_fluorescence) <- c(paste0("Cycle_Number", 1:total_runs))
+#  #change all values to numeric
+#  cols = c(1:total_runs)
+#  raw_fluorescence[, cols] <- apply(raw_fluorescence[, cols], 2, function(x)  as.numeric(as.character(x)))
+#  # add wellLocation (key for merging)
+#  raw_fluorescence$wellLocation <- fluorescence_file[11:end_row, 1]
+#  raw_fluorescence <- as.data.frame(raw_fluorescence[,c(ncol(raw_fluorescence),1:ncol(raw_fluorescence)-1)])
+#  print(paste0("number of wells: ", nrow(raw_fluorescence), ", number of cycles: ", ncol(raw_fluorescence)-1))
+#  return (raw_fluorescence)
+#}
 
 ############### Functions for processing merged file ##################
 
-merged_file_processing <- function(merged_file, dataset_name){
+#merged_file_processing <- function(merged_file, dataset_name){
+merged_file_processing <- function(merged_file){
   # handling extreme cq values
 
   merged_file$systemCalculatedCqValue <- as.numeric(merged_file$systemCalculatedCqValue)
@@ -359,8 +327,8 @@ merged_file_processing <- function(merged_file, dataset_name){
                                                             "20 <= Moderate < 30",
                                                             "30 <= Weak < 40",
                                                             "None > 40"))
-  #Changing wellLocation column class to character
-  merged_file$wellLocation <- as.character(merged_file$wellLocation)
+  #Changing mdmaprThres column class to character
+  merged_file$mdmaprThres <- as.character(merged_file$mdmaprThres)
 
   # ensuring date values have a date format
   merged_file$projectCreationDate <- as.Date(as.character(merged_file$projectCreationDate), "%Y-%m-%d")
@@ -370,7 +338,7 @@ merged_file_processing <- function(merged_file, dataset_name){
   merged_file$assayDate <- as.Date(as.character(merged_file$assayDate), "%Y-%m-%d")
 
   # adding dataset name
-  merged_file$dataset_name <- dataset_name
+#  merged_file$dataset_name <- dataset_name
 
   # remove one of the userprovided threshold columns and rename the other
   merged_file$userProvidedThresholdValue.x <- NULL
@@ -391,8 +359,8 @@ merged_file_processing <- function(merged_file, dataset_name){
   merged_file <- cbind(merged_file, filler_df)
 
   # now we'll set the order of the values
-  merged_file <- merged_file[ , c("dataset_name", "resultID", "runID", "assayID", "pcrChemistryID", "extractID", "wellLocation", "sampleName", "copyNumber", "control", "userProvidedThresholdValue", "CqvaluewithUserThreshold", "systemCalculatedThresholdValue","systemCalculatedCqValue", "userProvidedCqValue","CqIntensitySystemCalculated", "rSquared", "Cycle_Number1",	"Cycle_Number2", "Cycle_Number3",	"Cycle_Number4",	"Cycle_Number5", "Cycle_Number6",	"Cycle_Number7",	"Cycle_Number8", "Cycle_Number9",	"Cycle_Number10",	"Cycle_Number11","Cycle_Number12",	"Cycle_Number13",	"Cycle_Number14","Cycle_Number15",	"Cycle_Number16",	"Cycle_Number17","Cycle_Number18",	"Cycle_Number19",	"Cycle_Number20","Cycle_Number21",	"Cycle_Number22",	"Cycle_Number23","Cycle_Number24",	"Cycle_Number25",	"Cycle_Number26","Cycle_Number27",	"Cycle_Number28",	"Cycle_Number29", "Cycle_Number30",	"Cycle_Number31",	"Cycle_Number32","Cycle_Number33",	"Cycle_Number34",	"Cycle_Number35", "Cycle_Number36", "Cycle_Number37","Cycle_Number38","Cycle_Number39","Cycle_Number40","Cycle_Number41", "Cycle_Number42", "Cycle_Number43", "Cycle_Number44", "Cycle_Number45", "Cycle_Number46", "Cycle_Number47", "Cycle_Number48", "Cycle_Number49", "Cycle_Number50", "Cycle_Number51", "Cycle_Number52", "Cycle_Number53", "Cycle_Number54", "Cycle_Number55", "Cycle_Number56", "Cycle_Number57", "Cycle_Number58", "Cycle_Number59", "Cycle_Number60", "Cycle_Number61", "Cycle_Number62", "Cycle_Number63", "Cycle_Number64", "Cycle_Number65", "Cycle_Number66", "Cycle_Number67", "Cycle_Number68", "Cycle_Number69", "Cycle_Number70", "runRecordedBy","runDate", "runTime", "runPlatform", "machineID", "reactionConditions", "reactionVolume", "templateAmount", "forwardPrimerBatch", "reversePrimerBatch", "dNTPConcentration", "primerConcentration", "probeConcentration", "Mg2+Concentration", "polymeraseBatch", "polymeraseConcentrations", "thermocyclerParameters", "pcrDataNotes", "taxonID", "establishmentMeans", "assayName", "assayOwnership", "assayDescription", "assayCitation", "assayDate", "geneTarget", "geneSymbol", "dilutions", "replicates", "primerR", "primerF", "probe", "ampliconLength (bp)", "probeFluorescentTag", "dye(s)", "quencher", "probeModification", "kingdom", "phylum", "class", "order", "family", "genus", "subgenus", "species", "vernacularName", "organismScope", "replicateID", "extractName", "analyst", "extractionDate", "extractionTime", "location", "extractionMethod", "methodCitation", "extractionNotes", "tubePlateID", "frozen", "fixed", "dnaStorageLocation", "extractMethodOfStorage", "dnaVolume", "quantificationMethod", "concentration(ng/ul)", "stationID", "collectorName", "replicateName", "collectionDate", "collectionTime", "storageID", "DateOfStorage", "methodOfStorage", "minimumElevationInMeters", "maximumElevationInMeters", "verbatimElevation", "minimumDepthInMeters", "maximumDepthInMeters", "verbatimDepth", "flowRate(m/s)", "filterType", "filtrationDuration(mins)", "volumeFiltered", "processLocation", "replicationNumber", "riparianVegetationPercentageCover", "dissolvedOxygen(mg/L)", "waterTemperature(C)", "pH", "TSS(mg/L)", "EC(uS/cm)", "turbidity(NTU)", "discharge", "tide", "chlorophyl", "salinity(ppt)", "contaminants(ng/g)", "traceMetals(mg/kg)", "organicContent(%)", "microbialActivity", "grainSize", "replicateDataNotes", "siteID", "stationName", "decimalLongitude", "decimalLatitude", "geographicRegionID", "locality", "estimatedPerimeter", "estimatedSurfaceArea(m2)", "siteType", "siteLength(m2)", "projectID", "continent", "country", "stateProvince", "municipality", "projectCreationDate","projectName", "projectRecordedBy", "projectOwner", "projectContactEmail", "projectDescription", "InstitutionID", "projectDataNotes", "standardCurveID", "standardCurveName", "SCdate", "SCrecordedBy", "SCdataNotes")]
-
+#  merged_file <- merged_file[ , c("dataset_name", "resultID", "runID", "assayID", "pcrChemistryID", "extractID", "mdmaprThres", "sampleName", "copyNumber", "control", "userProvidedThresholdValue", "CqvaluewithUserThreshold", "systemCalculatedThresholdValue","systemCalculatedCqValue", "userProvidedCqValue","CqIntensitySystemCalculated", "rSquared", "Cycle_Number1",	"Cycle_Number2", "Cycle_Number3",	"Cycle_Number4",	"Cycle_Number5", "Cycle_Number6",	"Cycle_Number7",	"Cycle_Number8", "Cycle_Number9",	"Cycle_Number10",	"Cycle_Number11","Cycle_Number12",	"Cycle_Number13",	"Cycle_Number14","Cycle_Number15",	"Cycle_Number16",	"Cycle_Number17","Cycle_Number18",	"Cycle_Number19",	"Cycle_Number20","Cycle_Number21",	"Cycle_Number22",	"Cycle_Number23","Cycle_Number24",	"Cycle_Number25",	"Cycle_Number26","Cycle_Number27",	"Cycle_Number28",	"Cycle_Number29", "Cycle_Number30",	"Cycle_Number31",	"Cycle_Number32","Cycle_Number33",	"Cycle_Number34",	"Cycle_Number35", "Cycle_Number36", "Cycle_Number37","Cycle_Number38","Cycle_Number39","Cycle_Number40","Cycle_Number41", "Cycle_Number42", "Cycle_Number43", "Cycle_Number44", "Cycle_Number45", "Cycle_Number46", "Cycle_Number47", "Cycle_Number48", "Cycle_Number49", "Cycle_Number50", "Cycle_Number51", "Cycle_Number52", "Cycle_Number53", "Cycle_Number54", "Cycle_Number55", "Cycle_Number56", "Cycle_Number57", "Cycle_Number58", "Cycle_Number59", "Cycle_Number60", "Cycle_Number61", "Cycle_Number62", "Cycle_Number63", "Cycle_Number64", "Cycle_Number65", "Cycle_Number66", "Cycle_Number67", "Cycle_Number68", "Cycle_Number69", "Cycle_Number70", "runRecordedBy","runDate", "runTime", "runPlatform", "machineID", "reactionConditions", "reactionVolume", "templateAmount", "forwardPrimerBatch", "reversePrimerBatch", "dNTPConcentration", "primerConcentration", "probeConcentration", "Mg2+Concentration", "polymeraseBatch", "polymeraseConcentrations", "thermocyclerParameters", "pcrDataNotes", "taxonID", "establishmentMeans", "assayName", "assayOwnership", "assayDescription", "assayCitation", "assayDate", "geneTarget", "geneSymbol", "dilutions", "replicates", "primerR", "primerF", "probe", "ampliconLength (bp)", "probeFluorescentTag", "dye(s)", "quencher", "probeModification", "kingdom", "phylum", "class", "order", "family", "genus", "subgenus", "species", "vernacularName", "organismScope", "replicateID", "extractName", "analyst", "extractionDate", "extractionTime", "location", "extractionMethod", "methodCitation", "extractionNotes", "tubePlateID", "frozen", "fixed", "dnaStorageLocation", "extractMethodOfStorage", "dnaVolume", "quantificationMethod", "concentration(ng/ul)", "stationID", "collectorName", "replicateName", "collectionDate", "collectionTime", "storageID", "DateOfStorage", "methodOfStorage", "minimumElevationInMeters", "maximumElevationInMeters", "verbatimElevation", "minimumDepthInMeters", "maximumDepthInMeters", "verbatimDepth", "flowRate(m/s)", "filterType", "filtrationDuration(mins)", "volumeFiltered", "processLocation", "replicationNumber", "riparianVegetationPercentageCover", "dissolvedOxygen(mg/L)", "waterTemperature(C)", "pH", "TSS(mg/L)", "EC(uS/cm)", "turbidity(NTU)", "discharge", "tide", "chlorophyl", "salinity(ppt)", "contaminants(ng/g)", "traceMetals(mg/kg)", "organicContent(%)", "microbialActivity", "grainSize", "replicateDataNotes", "siteID", "stationName", "decimalLongitude", "decimalLatitude", "geographicRegionID", "locality", "estimatedPerimeter", "estimatedSurfaceArea(m2)", "siteType", "siteLength(m2)", "projectID", "continent", "country", "stateProvince", "municipality", "projectCreationDate","projectName", "projectRecordedBy", "projectOwner", "projectContactEmail", "projectDescription", "InstitutionID", "projectDataNotes", "standardCurveID", "standardCurveName", "SCdate", "SCrecordedBy", "SCdataNotes")]
+  merged_file <- merged_file[ , c("resultID", "runID", "assayID", "pcrChemistryID", "extractID", "mdmaprThres", "sampleName", "copyNumber", "control", "userProvidedThresholdValue", "CqvaluewithUserThreshold", "systemCalculatedThresholdValue","systemCalculatedCqValue", "userProvidedCqValue","CqIntensitySystemCalculated", "rSquared", "Cycle_Number1",	"Cycle_Number2", "Cycle_Number3",	"Cycle_Number4",	"Cycle_Number5", "Cycle_Number6",	"Cycle_Number7",	"Cycle_Number8", "Cycle_Number9",	"Cycle_Number10",	"Cycle_Number11","Cycle_Number12",	"Cycle_Number13",	"Cycle_Number14","Cycle_Number15",	"Cycle_Number16",	"Cycle_Number17","Cycle_Number18",	"Cycle_Number19",	"Cycle_Number20","Cycle_Number21",	"Cycle_Number22",	"Cycle_Number23","Cycle_Number24",	"Cycle_Number25",	"Cycle_Number26","Cycle_Number27",	"Cycle_Number28",	"Cycle_Number29", "Cycle_Number30",	"Cycle_Number31",	"Cycle_Number32","Cycle_Number33",	"Cycle_Number34",	"Cycle_Number35", "Cycle_Number36", "Cycle_Number37","Cycle_Number38","Cycle_Number39","Cycle_Number40","Cycle_Number41", "Cycle_Number42", "Cycle_Number43", "Cycle_Number44", "Cycle_Number45", "Cycle_Number46", "Cycle_Number47", "Cycle_Number48", "Cycle_Number49", "Cycle_Number50", "Cycle_Number51", "Cycle_Number52", "Cycle_Number53", "Cycle_Number54", "Cycle_Number55", "Cycle_Number56", "Cycle_Number57", "Cycle_Number58", "Cycle_Number59", "Cycle_Number60", "Cycle_Number61", "Cycle_Number62", "Cycle_Number63", "Cycle_Number64", "Cycle_Number65", "Cycle_Number66", "Cycle_Number67", "Cycle_Number68", "Cycle_Number69", "Cycle_Number70", "runRecordedBy","runDate", "runTime", "runPlatform", "machineID", "reactionConditions", "reactionVolume", "templateAmount", "forwardPrimerBatch", "reversePrimerBatch", "dNTPConcentration", "primerConcentration", "probeConcentration", "Mg2+Concentration", "polymeraseBatch", "polymeraseConcentrations", "thermocyclerParameters", "pcrDataNotes", "taxonID", "establishmentMeans", "assayName", "assayOwnership", "assayDescription", "assayCitation", "assayDate", "geneTarget", "geneSymbol", "dilutions", "replicates", "primerR", "primerF", "probe", "ampliconLength (bp)", "probeFluorescentTag", "dye(s)", "quencher", "probeModification", "kingdom", "phylum", "class", "order", "family", "genus", "subgenus", "species", "vernacularName", "organismScope", "replicateID", "extractName", "analyst", "extractionDate", "extractionTime", "location", "extractionMethod", "methodCitation", "extractionNotes", "tubePlateID", "frozen", "fixed", "dnaStorageLocation", "extractMethodOfStorage", "dnaVolume", "quantificationMethod", "concentration(ng/ul)", "stationID", "collectorName", "replicateName", "collectionDate", "collectionTime", "storageID", "DateOfStorage", "methodOfStorage", "minimumElevationInMeters", "maximumElevationInMeters", "verbatimElevation", "minimumDepthInMeters", "maximumDepthInMeters", "verbatimDepth", "flowRate(m/s)", "filterType", "filtrationDuration(mins)", "volumeFiltered", "processLocation", "replicationNumber", "riparianVegetationPercentageCover", "dissolvedOxygen(mg/L)", "waterTemperature(C)", "pH", "TSS(mg/L)", "EC(uS/cm)", "turbidity(NTU)", "discharge", "tide", "chlorophyl", "salinity(ppt)", "contaminants(ng/g)", "traceMetals(mg/kg)", "organicContent(%)", "microbialActivity", "grainSize", "replicateDataNotes", "siteID", "stationName", "decimalLongitude", "decimalLatitude", "geographicRegionID", "locality", "estimatedPerimeter", "estimatedSurfaceArea(m2)", "siteType", "siteLength(m2)", "projectID", "continent", "country", "stateProvince", "municipality", "projectCreationDate","projectName", "projectRecordedBy", "projectOwner", "projectContactEmail", "projectDescription", "InstitutionID", "projectDataNotes", "standardCurveID", "standardCurveName", "SCdate", "SCrecordedBy", "SCdataNotes")]
   return(merged_file)
 
 }

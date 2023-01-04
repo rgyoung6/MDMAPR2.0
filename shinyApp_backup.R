@@ -96,8 +96,8 @@ shinyAppServer <- function(input, output, session) {
     validate(need(input$qpcr_file, 'No fluorescence file uploaded'),
              need(try(file_ext(input$qpcr_file) == "rdml"), "Fluorescence file must be an RDML"),
              need(input$metadata_file, 'No metadata file uploaded'),
-             need(try(file_ext(input$metadata_file) == "tsv") , "Metadata file must be tab separated file")
-             )
+             need(try(file_ext(input$metadata_file) == "tsv") , "Metadata file must be tab separated file"),
+             need(input$upload_data_name, 'No name given to data set'))
   })
 
   output$error_msg <- renderText({
@@ -106,8 +106,40 @@ shinyAppServer <- function(input, output, session) {
   #Pop-up validation messages for uploaded fluorescence file.
   observeEvent(input$qpcr_file,fluorescence_file_validation_msgs(input$qpcr_file))
 
+  #Pop-up validation messages for uploaded std_curve file.
+  observeEvent(input$SCI_fluorescence_file, std_fluorescence_file_validation_msgs(input$SCI_fluorescence_file))
+
   #Pop-up validation messages for uploaded metadata file,
   observeEvent(input$metadata_file, metadata_file_validation_msgs(input$metadata_file))
+
+  ############ File Validation Upon Add Data Upload ##########
+
+  #File validate errors messages.
+  error_message_add <- reactive({
+    validate(need(input$qpcr_file_add, 'No fluorescence file uploaded'),
+             need(try(file_ext(input$qpcr_file_add) == "rdml"), "Fluorescence file must be an RDML"),
+             need(input$metadata_file_add, 'No metadata file uploaded'),
+             need(try(file_ext(input$metadata_file_add) == "xlsx" | file_ext(input$metadata_file_add) == "xls"), "Metadata file must be xlsx/xls"),
+             need(input$dataset_name_add, 'No name given to data set'))
+  })
+
+
+
+  #I don't know what this next line is accomplishing and the following pop-up messages are not functional.
+  #I am quoting them out ande they can be added back in at a later time.
+
+
+  #  output$error_msg_add <- renderText({
+  #    error_message()})
+
+  #Pop-up validation messages for uploaded fluorescence file.
+  #  observeEvent(input$qpcr_file_add,fluorescence_file_validation_msgs(input$qpcr_file_add))
+
+  #Pop-up validation messages for uploaded std_curve file.
+  #  observeEvent(input$SCI_fluorescence_file_add, std_fluorescence_file_validation_msgs(input$SCI_fluorescence_file_add))
+
+  #Pop-up validation messages for uploaded metadata file,
+  #  observeEvent(input$metadata_file_add, metadata_file_validation_msgs(input$metadata_file_add))
 
   #initalize uploaded_data reactive variable
   uploaded_data <- reactiveVal(value = NULL)
@@ -116,182 +148,405 @@ shinyAppServer <- function(input, output, session) {
 
   observeEvent(input$submit, {
 
-
-    updateTabItems(session, "tab_being_displayed", "dashboard")
-
-    withProgress(message = 'Creating data export', value = 0, {
-      output$dataexport <- renderDataTable({
-        export_data <- as.data.frame(uploaded_data())
-        datatable(export_data,
-                  options = list(
-                    scrollX = TRUE
-                  ))
-      })
-
-      # Increment the progress bar, and update the detail text.
-      incProgress(1, detail = paste("Doing part", 1))
-    })
-
     valid_files <- TRUE
 
-    #Checking to see if the file formats of the submitted files is OK
     withProgress(message = 'Validating files', value = 0, {
 
-    valid_files <- user_uploaded_file_validate(input$qpcr_file, input$metadata_file)
-      incProgress(1, detail = paste("Doing part", 1))
+      #      valid_files <- user_uploaded_file_validate(input$qpcr_file, input$metadata_file, input$platform, input$SCI_fluorescence_file, input$dataset_name)
+      valid_files <- user_uploaded_file_validate(input$qpcr_file, input$metadata_file, input$SCI_fluorescence_file, input$dataset_name)
 
+      incProgress(1, detail = paste("Doing part", 1))
     })
 
+    valid_files_global<<-valid_files
+
     # validate user uploaded files
-    if (valid_files == TRUE){
+    if (valid_files == FALSE){
 
       updateTabItems(session, "tab_being_displayed", "dashboard")
 
       withProgress(message = 'Processing data', value = 0, {
 
         # 1. Read in the RDML file
-        raw_multiplex_data <- process_Multiplexed_RDML(input$qpcr_file$datapath)
+        raw_multiplex_data_list <- process_Multiplexed_RDML(input$qpcr_file$datapath)
 
         # Increment the progress bar, and update the detail text.
         incProgress(1/6, detail = paste("Processing RDML", 1))
 
         # 2. Read in and format the metadata
 
-        #Read in the metadata file
-        formatted_metadata<-read.table(input$metadata_file$datapath, header=TRUE, sep="\t", dec=".")
+        print("Server - Submit - 2. Read in and format the metadata - BEGIN")
 
-        #Add a uniqueID to the beginning of the dataframe including projectID resultRunID resultID
-        #Which will correspond to the exp.id run.id react.id from RDML
-        built_unique_ID<-paste0(formatted_metadata$projectID,"_",formatted_metadata$resultRunID,"_", formatted_metadata$resultID)
-        formatted_metadata<-cbind(built_unique_ID, formatted_metadata)
+        formatted_metadata <- format_qPCR_metadata(input$metadata_file$datapath)
+
+        print("Server - Submit - 2. Read in and format the metadata - END")
 
         # Increment the progress bar, and update the detail text.
         incProgress(1/6, detail = paste("Formatting Metadata", 2))
 
-        # 4. Calculate the second derivative threshold
-        # confirm built_unique_ID is the row name
-        row.names(raw_multiplex_data)<- as.character(raw_multiplex_data$built_unique_ID)
+        # 3. remove the control records
 
-        # remove the column that contains the built_unique_ID information
-        raw_multiplex_data <- raw_multiplex_data[,-1]
+        print("Server - Submit - 3. remove the control records - BEGIN")
+
+        #        controls_removed <- remove_null_records(formatted_metadata, raw_multiplex_data_list)
+
+        # 3b. Let's separate the controls list object
+
+        print("Server - Submit - 3b. Let's separate the controls list object - BEGIN")
+
+        #        formatted_metadata <- controls_removed[[2]]
+        #        raw_multiplex_data_list <-controls_removed[[1]]
+
+        print("Server - Submit - 3b. Let's separate the controls list object - END")
+        print("Server - Submit - 3. remove the control records - END")
+
+        incProgress(1/6, detail = paste("Handling Control Records", 3))
+
+        # 4. Calculate the second derivative threshold
+
+        print("Server - Submit - 4. Calculate the second derivative threshold - BEGIN")
+
+        # convert all columns into numeric values
+        raw_multiplex_data_list <- lapply(raw_multiplex_data_list, function(x) {sapply(x[,c(2:ncol(x))], as.numeric);x})
+        print("Server - Submit - 4. Calculate the second derivative threshold - Here 1")
+        print(dim(raw_multiplex_data_list[[1]]))
+
+        # confirm WellLocation is the row name
+        raw_multiplex_data_list <- lapply(raw_multiplex_data_list, function(x){rownames(x)<- as.character(x$wellLocation);x})
+        print("Server - Submit - 4. Calculate the second derivative threshold - Here 2")
+
+        # remove the column that contains the wellLocation information
+        raw_multiplex_data_list <- lapply(raw_multiplex_data_list, function(x){x <- x[,-1]})
+        print("Server - Submit - 4. Calculate the second derivative threshold - Here 3")
 
         # calculate threshold
-        raw_multiplex_data <- calculate_second_deriv_threshold(raw_multiplex_data)
+        print(dim(raw_multiplex_data_list[[1]]))
+        raw_multiplex_data_list <- lapply(raw_multiplex_data_list,calculate_second_deriv_threshold)
+        print("Server - Submit - 4. Calculate the second derivative threshold - Here 4")
 
-        # Add the user provided threshold value
-        raw_multiplex_data <- merge(as.data.frame(raw_multiplex_data), formatted_metadata[ , c("resultUserProvThres", "built_unique_ID")], by="built_unique_ID")
+        # Add the userprovided threshold value
+        raw_multiplex_data_list <- lapply(raw_multiplex_data_list, function(x){merge(x, formatted_metadata[ , c("userProvidedThresholdValue", "wellLocation")], by="wellLocation")})
+        print("Server - Submit - 4. Calculate the second derivative threshold - Here 5")
+
         incProgress(1/6, detail = paste("Calculating Threshold", 4))
 
+        print("Server - Submit - 4. Calculate the second derivative threshold - END")
+
         # 5. Calculate the Cq value using the threshold
-        print("Calculating MDMAPR threshold Cq")
-        raw_data_with_Cq <- add_Cq(raw_multiplex_data, "mdmaprThres", "mdmaprCq")
+
+        print("Server - Submit - 5. Calculate the Cq value using the threshold - BEGIN")
+
+        raw_data_with_Cq <- lapply(raw_multiplex_data_list, function(x){add_Cq(x, "systemCalculatedThresholdValue", "systemCalculatedCqValue")})
+
         incProgress(1/6, detail = paste("Calculating Cq", 5))
 
+        print("Server - Submit - 5. Calculate the Cq value using the threshold - END")
+
         # 6. If the user has threshold values provided, calculate the Cq value with that threshold
-        print("Calculating user threshold Cq")
-        raw_data_with_Cq_User_Thres <- add_Cq(raw_multiplex_data, "resultUserProvThres", "mdmaprCqwUserThres")
 
-        #Add the mdmaprCqwUserThres onto the data frame
-        raw_data_with_Cq_Total<-merge(raw_data_with_Cq, raw_data_with_Cq_User_Thres[,c("mdmaprCqwUserThres", "built_unique_ID")], by = "built_unique_ID", all=TRUE )
+        print("Server - Submit - 6. If the user has threshold values provided, calculate the Cq value with that threshold - BEGIN")
 
-
-
-
-
-
-
-#Need to update standard curve calculation below to use data from the main metadata file and RDML file
-
-print("Observe Event Input Submit - 16")
+        for(target in 1:length(raw_data_with_Cq)){
+          print("In the if there are submitted Cq")
+          copy_numbers <- list()
+          if(any(is.na(raw_data_with_Cq[[target]]$userProvidedThresholdValue))){
+            raw_data_with_Cq[[target]] <- cbind(raw_data_with_Cq[[target]],CqvaluewithUserThreshold="No Threshold Value Provided by User")
+          } else{
+            print("In the else there are submitted Cq")
+            raw_data_with_Cq[[target]] <- add_Cq(raw_data_with_Cq[[target]],"userProvidedThresholdValue", "CqvaluewithUserThreshold")}
+          copy_numbers[[length(copy_numbers)+1]] <- data.frame(wellLocation=formatted_metadata$wellLocation, logDNACopyNumber=rep("NA", nrow(raw_data_with_Cq[[target]])), rSquared=rep("NA", nrow(raw_data_with_Cq[[target]])))
+        }
+        print("After the if there are submitted Cq")
         # Assess if standard curve file has been provided, if so, process the fluorescence and metadata
         if (!is.null(input$SCI_fluorescence_file)){
-print("Observe Event Input Submit - 17")
+          #          print("is there a problem")
+          #          print(!is.null(input$SCI_fluorescence_file))
+
+          #          std_fluorescence <- process_SOP_uploaded_file(read_excel(input$SCI_fluorescence_file$datapath, 4))
+
           std_fluorescence <- process_Multiplexed_RDML(input$SCI_fluorescence_file$datapath)
-print("Observe Event Input Submit - 18")
+
           # all metadata files are processed with the same function
           std_meta <- format_std_curve_metadata(input$metadata_file$datapath)
-print("Observe Event Input Submit - 19")
+
           # 7. Calculate the threshold for the Standard curve data if provided
-          rownames(std_fluorescence) <- std_meta$resultWellLoc
+          rownames(std_fluorescence) <- std_meta$wellLocation
           std_fluorescence <- std_fluorescence[,-1]
           std_w_threshold <- calculate_second_deriv_threshold(std_fluorescence)
-print("Observe Event Input Submit - 20")
+
+
           # 8. Calculate Cq values for the Standard curve data if provided
-          std_w_threshold <- add_Cq(std_w_threshold, "mdmaprThres", "mdmaprCq")
-print("Observe Event Input Submit - 21")
+          std_w_threshold <- add_Cq(std_w_threshold, "systemCalculatedThresholdValue", "systemCalculatedCqValue")
+
+
           # 9. Merge with copy number information
-          std_w_threshold <- merge(std_w_threshold, std_meta[, c("resultWellLoc", "resultTemplateConcInngPeruL")])
-print("Observe Event Input Submit - 22")
+          std_w_threshold <- merge(std_w_threshold, std_meta[, c("wellLocation", "standardConc")])
+
           # 10. Calculate the copy number
           for (target in (1:length(raw_data_with_Cq))){
             copy_numbers[[target]] <- calculate_copy_number(std_w_threshold, raw_data_with_Cq[[target]])
           }
           copy_numbers <- calculate_copy_number(std_w_threshold, raw_data_with_Cq[[1]])
-print("Observe Event Input Submit - 23")
+
         }
-
-
-
-
-
         # 11. Merge all the data
-        #First get all of the RDML and metadata unique ID's
-        total_built_unique_ID<-unique(formatted_metadata$built_unique_ID)
 
-        #Error checks - print error to console
-        if (length(formatted_metadata$built_unique_ID)>length(unique(formatted_metadata$built_unique_ID))){
+        print("Server - Submit - 11. Merge all the data - BEGIN")
 
-          print("Error - Duplication of unique key used in program in metadata file (Unique key - projectID_resultRunID_resultID).")
-          print("Please re-evaluate your metadata file and rerun the program.")
+        #all_merged_data <- merge(raw_data_with_Cq[[1]], formatted_metadata, by="wellLocation")
+        all_merged_data <- lapply(raw_data_with_Cq, function(x){merge(x,formatted_metadata, by="wellLocation")})
 
+        # add the copy number
+        for (target in 1:length(all_merged_data)){
+          all_merged_data[[target]] <- merge(all_merged_data[[target]], copy_numbers[[target]], by="wellLocation")
         }
-        if (length(formatted_metadata$built_unique_ID)>length(unique(formatted_metadata$built_unique_ID))){
+        #all_merged_data <- lapply(all_merged_data, function(x){merge(x,copy_numbers, by="wellLocation")})
 
-            print("Error - Duplication of unique key used in program in RDML file (Unique key - exp.id_run.id_react.id).")
-            print("Please re-evaluate your RDML file and rerun the program.")
+        # combine all dataframes in the list as a single dataframe
 
-        }
-        if (length(setdiff(unique(formatted_metadata$built_unique_ID), unique(raw_data_with_Cq_Total$built_unique_ID)))>0){
+        #test <- do.call(rbind, all_merged_data)
+        all_merged_data <- do.call(rbind, all_merged_data)
 
-          print("Warning - Not all metadata records (as defined by the unique key - projectID_resultRunID_resultID) were represented in the uploaded RDML file")
+        # processing the data like cq column intervals
+        all_merged_data <- merged_file_processing(all_merged_data, input$upload_data_name)
 
-        }
-        if (length(setdiff(unique(raw_data_with_Cq_Total$built_unique_ID), unique(formatted_metadata$built_unique_ID)))>0){
+        print("Server - Submit - 11. Merge all the data - Almost done")
 
-          print("Warning - Not all RDML records (as defined by the unique key - exp.id_run.id_react.id) were represented in the metadata table")
+        incProgress(1/6, detail = paste("Merging Files", 6))
 
-        }
+        print("Server - Submit - 11. Merge all the data - END")
 
-        #Get all unique values for the metadata file
-        metadata_built_unique_ID_order<-data.frame(formatted_metadata$built_unique_ID)
-        #Give the one column dataframe a header
-        colnames(metadata_built_unique_ID_order)<-"built_unique_ID"
+      })
 
-        #Merge the Cq calculations on to this dataframe
-        all_merged_data_temp <- merge(metadata_built_unique_ID_order, raw_data_with_Cq_Total, by = "built_unique_ID", all.x = TRUE)
+      print("Server - Submit - 11. Merge all the data - Before the return")
 
-        #Replace the existing columns in the dataframe with these columns
-        formatted_metadata[names(raw_data_with_Cq_Total[-1])] <- raw_data_with_Cq_Total[-1]
+      all_merged_data_global<<-all_merged_data
 
-        uploaded_data(formatted_metadata)
+      #      return(uploaded_data(all_merged_data))
+      uploaded_data(all_merged_data)
 
-        print("At the end of observeEvent(input$submit)")
+      uploaded_data_global<<-uploaded_data
 
-      })#end of the withProgress block
+      print("Server - Submit - 11. Merge all the data - After the return")
 
-    }#end of the if valid statement
+      #   }
+    }
 
-  })# end of the main observeEvent
+    updateTabItems(session, "tab_being_displayed", "dashboard")
 
+    withProgress(message = 'Creating data export', value = 0, {
+      output$dataexport <- renderDataTable({
+        export_data <- as.data.frame(uploaded_data())
+        datatable(export_data,options = list(scrollX = TRUE))
+      })
+
+      #Increment the progress bar, and update the detail text.
+      incProgress(1, detail = paste("Doing part", 1))
+    })
+
+    print("At the end of observeEvent(input$submit)")
+
+  })
+
+
+  ############ Data Processing Upon Hitting Add Data Submit ##########
+
+  # This will repeat the above processing but for new datasets
+
+  #  observeEvent(input$submit_add, {
+
+  #    valid_files <- TRUE
+
+  #    withProgress(message = 'Validating files', value = 0, {
+
+  #print("In the obsereve event submit right before the user_uploaded_file_validate call")
+
+  #      valid_files <- user_uploaded_file_validate(input$qpcr_file_add, input$metadata_file_add, input$platform_add, input$SCI_fluorescence_file_add, input$add_data_name)
+  #      valid_files <- user_uploaded_file_validate(input$qpcr_file_add, input$metadata_file_add, input$SCI_fluorescence_file_add, input$add_data_name)
+  #      incProgress(1, detail = paste("Doing part", 1))
+  #    })
+
+  #valid_files_add_global<<-valid_files
+
+  # validate user uploaded files
+  #    if (valid_files == FALSE){
+
+  #      withProgress(message = 'Processing data', value = 0, {
+
+  # 1. Read in the RDML file
+  #        raw_multiplex_data_list <- process_Multiplexed_RDML(input$qpcr_file_add$datapath)
+
+  # Increment the progress bar, and update the detail text.
+  #        incProgress(1/6, detail = paste("Processing RDML", 1))
+
+  # 2. Read in and format the metadata
+  #        formatted_metadata <- format_qPCR_metadata(input$metadata_file_add$datapath)
+
+  # Increment the progress bar, and update the detail text.
+  #        incProgress(1/6, detail = paste("Formatting Metadata", 2))
+
+  # 3. remove the control records
+  #        controls_removed <- remove_null_records(formatted_metadata, raw_multiplex_data_list)
+
+  # 3b. Let's separate the controls list object
+  #        formatted_metadata <- controls_removed[[2]]
+  #        raw_multiplex_data_list <-controls_removed[[1]]
+
+  # Increment the progress bar, and update the detail text.
+  #        incProgress(1/6, detail = paste("Handling Controls", 3))
+
+  # 4. Calculate the second derivative threshold
+  # use lapply to set the wellLocations as the rownames
+  #        raw_multiplex_data_list <- lapply(raw_multiplex_data_list, "rownames<-", raw_multiplex_data_list[[1]]$wellLocation)
+  #        well_names <- raw_multiplex_data_list[[1]]$wellLocation
+
+  # remove the column that contains that information
+  #        raw_multiplex_data_list <- lapply(raw_multiplex_data_list, function(x){x <- x[,-1]})
+
+  # convert all columns into numeric values
+  #        raw_multiplex_data_list <- lapply(raw_multiplex_data_list, function(x) {sapply(x, as.numeric)})
+  #        raw_multiplex_data_list <- lapply(raw_multiplex_data_list, "rownames<-", well_names)
+
+  # calculate threshold
+  #        raw_multiplex_data_list <- lapply(raw_multiplex_data_list,calculate_second_deriv_threshold)
+
+  # Add the user provided threshold value
+  #        raw_multiplex_data_list <- lapply(raw_multiplex_data_list, function(x){merge(x, formatted_metadata[ , c("userProvidedThresholdValue", "wellLocation")], by="wellLocation")})
+
+  #        incProgress(1/6, detail = paste("Calculating Threshold", 4))
+
+  # 5. Calculate the Cq value using the threshold
+  #        raw_data_with_Cq <- lapply(raw_multiplex_data_list, function(x){add_Cq(x, "systemCalculatedThresholdValue", "systemCalculatedCqValue")})
+
+  #        incProgress(1/6, detail = paste("Calculating Cq", 5))
+
+  # 6. If the user has threshold values provided, calculate the Cq value with that threshold
+  #        if(any(is.na(raw_data_with_Cq[[1]]$userProvidedThresholdValue))){
+  #          raw_data_with_Cq<- lapply(raw_data_with_Cq, function(x)cbind(x,CqvaluewithUserThreshold="No Threshold Value Provided by User"))
+  #        } else{
+  #          raw_data_with_Cq <- lapply(raw_data_with_Cq, function(x){add_Cq(x,"userProvidedThresholdValue", "CqvaluewithUserThreshold")})}
+
+  #        copy_numbers <- data.frame(wellLocation=formatted_metadata$wellLocation, logDNACopyNumber=rep("NA", nrow(raw_data_with_Cq[[1]])), rSquared=rep("NA", nrow(raw_data_with_Cq[[1]])))
+  # Assess if standard curve file has been provided, if so, process the fluorescence and metadata
+
+  # Assess if standard curve file has been provided, if so, process the fluorescence and metadata
+  #        if (!is.null(input$SCI_fluorescence_file_add)){
+
+  # all metadata files are processed with the same function
+  #          std_meta <- format_std_curve_metadata(input$metadata_file_add$datapath)
+
+  # 7. Calculate the threshold for the Standard curve data if provided
+  #          rownames(std_fluorescence) <- std_meta$wellLocation
+  #          std_fluorescence <- std_fluorescence[,-1]
+  #          std_w_threshold <- calculate_second_deriv_threshold(std_fluorescence)
+
+  # 8. Calculate Cq values for the Standard curve data if provided
+  #          std_w_threshold <- add_Cq(std_w_threshold, "systemCalculatedThresholdValue", "systemCalculatedCqValue")
+
+
+  # 9. Merge with copy number information
+  #          std_w_threshold <- merge(std_w_threshold, std_meta[, c("wellLocation", "standardConc")])
+
+  # 10. Calculate the copy number
+  #          copy_numbers <- calculate_copy_number(std_w_threshold, raw_data_with_Cq[[1]])
+
+  #       }
+  # 11. Merge all the data
+  #        all_merged_data <- merge(raw_data_with_Cq[[1]], formatted_metadata, by="wellLocation")
+  # add the copy number
+  #        all_merged_data <- merge(all_merged_data, copy_numbers, by="wellLocation")
+
+  # processing the data like cq column intervals
+  #        all_merged_data <- merged_file_processing(all_merged_data, input$upload_data_name)
+
+
+  #        new_merged_data <- rbind.fill(all_merged_data, uploaded_data())
+
+  #        incProgress(1/6, detail = paste("Merging Data", 6))
+  #      })
+
+  #     uploaded_data(new_merged_data)
+
+  #    }
+
+  #    updateTabItems(session, "tab_being_displayed", "dashboard")
+
+  #    withProgress(message = 'Conducting data export', value = 0, {
+  #      output$dataexport <- renderDataTable({
+  #        export_data <- as.data.frame(uploaded_data())
+  #        datatable(export_data,
+  #                  options = list(
+  #                    scrollX = TRUE
+  #                  ))
+  #      })
+
+  # Increment the progress bar, and update the detail text.
+  #      incProgress(1, detail = paste("Doing part", 1))
+  #    })
+
+  #print("At the end of observeEvent(input$submit_add)")
+
+  #  })
+
+
+  ############ Zipfile Upload ##########
+
+
+  #  all <- reactive({
+  #    inFile <- req(input$load_saved_data)
+  #    filelist <- unzip(inFile$datapath, list = T)
+  #    lapply(filelist$Name, read_csv)
+  #  })
+
+  # upload the fluorescence table for mapping
+  #  observeEvent(input$submit_MDMAPR_file, {
+  #    updateTabItems(session, "tab_being_displayed", "dashboard")
+  #    return(uploaded_data(all()[[1]]))
+  #    uploaded_data(all()[[1]])
+  #  })
+
+  # upload the standard curve table for analysis
+  #  observeEvent(input$submit_MDMAPR_file, {
+  #    return(standard_curve_tab_data(all()[[2]]))
+  #    standard_curve_tab_data(all()[[2]])
+  #  })
 
   ############ Data Export Download Button ##########
 
-  output$downloadMDMAPRTable <- downloadHandler(
+  output$downloadZipData <- downloadHandler(
     filename = function(){paste0(format(Sys.time(), "%Y_%m_%d_%H%M"), "_MDMAPR_Data.tsv")},
     content = function(file) {
       write.csv(uploaded_data, file)
     }
   )
+
+  #  output$downloadZipData <- downloadHandler(
+  #    filename = 'MDMAPR_Data.zip',
+  #    content = function(fname) {
+  #      fs <- c(
+  #        "mergedTable.csv",
+  #        "curve.csv")
+
+  #      write.csv(
+  #        as.data.frame(uploaded_data()),
+  #        file = "mergedTable.csv",
+  #        sep = ",",
+  #        row.names = FALSE,
+  #        na = "NULL")
+
+  #      curve_df <- as.data.frame(standard_curve_tab_data())
+
+  #      write.csv(
+  #        curve_df,
+  #        file = "curve.csv",
+  #        sep = ",",
+  #        row.names = FALSE,
+  #        na = "NULL")
+
+  #      zip(zipfile=fname, files=fs)
+  #    },
+
+  #    contentType = "application/zip")
 
   ############ Mapping Dash: Initialize and Populate Filters ##########
 
@@ -697,7 +952,7 @@ print("Observe Event Input Submit - 23")
     req(input$tab_being_displayed == "dashboard")
 
     if (!is.null(uploaded_data())) {
-#print(as.data.frame(filtered()))
+      #print(as.data.frame(filtered()))
 
       leaflet::leafletProxy("mymap", data = as.data.frame(filtered())) %>%
         clearMarkers() %>%
@@ -718,7 +973,7 @@ print("Observe Event Input Submit - 23")
     shinyjs::reset("qpcr_file")
     shinyjs::reset("metadata_file")
     shinyjs::reset("SCI_fluorescence_file")
-#    shinyjs::reset("upload_data_name")
+    shinyjs::reset("upload_data_name")
     shinyjs::reset("range") #ct range slider
     shinyjs::reset("family_input") #family dropdown box
     shinyjs::reset("genus_input") #genus dropdown box
@@ -745,19 +1000,62 @@ print("Observe Event Input Submit - 23")
       clearPopups()
 
   })
-  #Reset for the dataImport fields
-  observeEvent(input$resetDataImport, {
-    shinyjs::reset("qpcr_file")
-    shinyjs::reset("metadata_file")
-    shinyjs::reset("SCI_fluorescence_file")
+
+  # reset for add data box
+  observeEvent(input$reset_add, {
+    shinyjs::reset("qpcr_file_add")
+    shinyjs::reset("metadata_file_add")
+    shinyjs::reset("SCI_fluorescence_file_add")
+    shinyjs::reset("add_data_name")
   })
 
+  ############ Standard Curve File Validation ##########
 
-############ Standard Curve Data Processing ##########
+  #These are not working anyways - I am quoting them out and I will add pop-ups again later
 
-  #Not sure if I can have a react event for a dat set that is constructed from the
-  #main fluor and metadata table submission
+
+  #Return popup message regarding uploaded standard curve fluorescence file.
+  #  observeEvent(input$SC_fluorescence_file,
+  #               std_fluorescence_file_validation_msgs(input$SC_fluorescence_file))
+
+  #Return popup messaged regarding uploaded metadata file.
+  #  observeEvent(input$SC_metadata_file,
+  #               std_metadata_file_validation_msgs(input$SC_metadata_file))
+
+
   standard_curve_tab_data <- reactiveVal(value = NULL)
+
+  observeEvent(input$Uploaded_SC_submit, {
+    isolate(
+
+      #Validate content of user uploaded files
+      if (user_uploaded_standard_curve_file_validation(input$SC_fluorescence_file,
+                                                       input$SC_metadata_file) == TRUE)
+      {}
+      #      {return(NULL)}
+
+      ############ Standard Curve Data Processing ##########
+      else{
+
+        #Read in standard curve fluorescence file
+        standardCurve_StepOnePlus_raw <- process_SOP_uploaded_file(read_excel(input$SC_fluorescence_file$datapath, sheet = 4))
+
+        #Read in standard curve metadata
+        standardCurve_metadata_StepOnePlus <- format_standardCurve_metadata(read_xlsx(input$SC_metadata_file$datapath, sheet = 5))
+
+        #Function to process and merge files
+        merged_StepOnePlus_file <- merge_standardCurve_metadata_fluorescence_file(standardCurve_StepOnePlus_raw, standardCurve_metadata_StepOnePlus)
+
+        #Function to calculate LOD and LOQ
+        merged_StepOnePlus_file <- calculate_SC_LOD_LOQ(merged_StepOnePlus_file, input$LOQthres)
+        #print(merged_StepOnePlus_file)
+
+        standard_curve_tab_data(merged_StepOnePlus_file)
+
+        print("End of the Standard Curve Data Processing section")
+
+      })
+  })
 
   # show the LOD warning Message
   output$text <- renderPrint({
@@ -1247,25 +1545,6 @@ print("Observe Event Input Submit - 23")
     if (value == "Unable to Determine Threshold")
     {return ("#ffd700")}
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   # #Presence/absence table
   observeEvent(input$submit, isolate ({

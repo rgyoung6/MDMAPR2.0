@@ -1,7 +1,7 @@
 
 #Citation: Roediger S and Burdukiewicz M (2014). chipPCR: Toolkit of helper functions to pre-process amplification data. R package version 0.0.8-4, <http://CRAN.R-project.org/package=chipPCR>.
 
-
+setOldClass("summary.lm")
 setClass("th", contains = "matrix", representation(.Data = "matrix",
                                                    stats = "summary.lm",
                                                    input = "matrix"))
@@ -213,7 +213,3 @@ setMethod("inder", signature(x = "matrix", y = "missing"),
             inder(x[, 1], x[, 2], Nip = Nip, logy = logy,
                   smooth.method = smooth.method)
           })
-
-
-
-setOldClass("summary.lm")

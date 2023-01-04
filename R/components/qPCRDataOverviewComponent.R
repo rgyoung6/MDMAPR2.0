@@ -1,79 +1,4 @@
-#' @import shinydashboard
-#' @importFrom DT dataTableOutput
-#' @importFrom DT renderDataTable
-#' @importFrom DT datatable
-#' @import leaflet
-#' @import leaflet.extras
-#' @importFrom shinyWidgets pickerInput
-#' @importFrom shinyWidgets updatePickerInput
-#' @importFrom shinyjs reset
-#' @importFrom shinyjs alert
-#' @importFrom shinyjs useShinyjs
-#' @import ggplot2
-#' @import dplyr
-#' @import readxl
-#' @import reactable
-#' @import writexl
-#' @importFrom xfun file_ext
-#' @importFrom berryFunctions is.error
-#' @importFrom plotly plotlyOutput
-#' @importFrom plotly style
-#' @importFrom plotly layout
-#' @importFrom plotly ggplotly
-#' @importFrom plotly renderPlotly
-#' @import htmltools
-#' @importFrom shiny div
-#' @importFrom shiny downloadHandler
-#' @importFrom shiny icon
-#' @importFrom shiny isolate
-#' @importFrom shiny need
-#' @importFrom shiny observe
-#' @importFrom shiny observeEvent
-#' @importFrom shiny reactive
-#' @importFrom shiny reactiveVal
-#' @importFrom shiny renderText
-#' @importFrom shiny req
-#' @importFrom shiny updateSelectInput
-#' @importFrom shiny updateSliderInput
-#' @importFrom shiny validate
-#' @importFrom shiny a
-#' @importFrom shiny actionButton
-#' @importFrom shiny br
-#' @importFrom shiny column
-#' @importFrom shiny downloadLink
-#' @importFrom shiny em
-#' @importFrom shiny fileInput
-#' @importFrom shiny fluidRow
-#' @importFrom shiny h1
-#' @importFrom shiny h3
-#' @importFrom shiny h4
-#' @importFrom shiny HTML
-#' @importFrom shiny icon
-#' @importFrom shiny numericInput
-#' @importFrom shiny p
-#' @importFrom shiny radioButtons
-#' @importFrom shiny selectInput
-#' @importFrom shiny sliderInput
-#' @importFrom shiny strong
-#' @importFrom shiny tabPanel
-#' @importFrom shiny tabsetPanel
-#' @importFrom shiny shinyApp
-#' @importFrom shiny textOutput
-#' @import methods
-#' @importFrom utils read.csv
-#' @importFrom utils str
-#' @importFrom utils head
-#' @importFrom utils tail
-#' @importFrom utils zip
-#' @importFrom stats family
-#' @importFrom stats lm
-#' @importFrom stats mad
-#' @importFrom stats na.exclude
-#' @importFrom stats na.omit
-#' @importFrom stats quantile
-#' @importFrom stats residuals
-#' @importFrom bslib is_bs_theme
-NULL
+
 #qPCR Data Overview page ---------------------------
 
 qPCRDataOverviewComponent <- function() {
@@ -89,7 +14,7 @@ qPCRDataOverviewComponent <- function() {
           #Dropdown menu to select standard curve to view
           fluidRow(
 
-            tabBox(id = "tabset1",
+            box(id = "tabset1",
                    width = 3,
 
                    #Tab1
