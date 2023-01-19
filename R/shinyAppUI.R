@@ -10,7 +10,7 @@ shinyAppUI <- shinydashboard::dashboardPage(
   ##Sidebar content
   shinydashboard::dashboardSidebar(width=230,
                                    shinydashboard::sidebarMenu(
-                     htmltools::img(src="www/mdmaprlogo2.png",height=230,width=230),
+#                     htmltools::img(src="www/mdmaprlogo2.png",height=230,width=230),
                      #To allow app to use functions from shinyjs package
                      shinyjs::useShinyjs(),
 
@@ -25,6 +25,7 @@ shinyAppUI <- shinydashboard::dashboardPage(
                      shinydashboard::menuItem("Data Overview", tabName = "qPCRDataOverviewPage", icon = shiny::icon("chart-bar"))
                    )
   ),
+
   ##Body content
   dashBoardBodyComponent()
 )

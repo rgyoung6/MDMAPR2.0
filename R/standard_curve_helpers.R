@@ -1,5 +1,5 @@
 #Function calculates threshold value for each individual well on a qPCR plate based on raw absorbance values. The threshold function is based on the second derivative method to calculate the threshold value for qPCR data.
-#' @export
+
 calculate_threshold_value <- function(fluorescence_values) {
 
   fluorescence_values <- as.data.frame(t(fluorescence_values))
@@ -87,7 +87,7 @@ calculate_threshold_value <- function(fluorescence_values) {
   return(thresholdData)
 }
 #Function is used to calculated Cq value from a set of fluorescence data
-#' @export
+
 add_CqValue <- function(flur_file, meta_file) {
 
   #remove one to exclude CqValue column
@@ -120,7 +120,7 @@ add_CqValue <- function(flur_file, meta_file) {
 
 }
 
-#' @export
+
 format_standardCurve_metadata <- function (standardCurve_metadata) {
   standardCurve_Table <- as.data.frame(standardCurve_metadata[, c("SCresultID",
                                                                   "runID",
@@ -161,7 +161,7 @@ format_standardCurve_metadata <- function (standardCurve_metadata) {
   return (standardCurve_Table)
 }
 #Return popup message regarding uploaded standard curve fluorescence file.
-#' @export
+
 control_records_to_remove <- function(meta_data) {
   if (length(which(grepl("Y", toupper(meta_data$control)))) != 0)
   {return (meta_data[-c(which(grepl("Y", toupper(meta_data$control)))), ])}
@@ -170,7 +170,7 @@ control_records_to_remove <- function(meta_data) {
   {return(meta_data)}
 }
 
-#' @export
+
 process_MIC_uploaded_file <- function(fluorescence_file) {
 
   #Transpose fluorescence dataframe
@@ -196,7 +196,7 @@ process_MIC_uploaded_file <- function(fluorescence_file) {
 
 }
 
-#' @export
+
 process_biomeme23_uploaded_file <- function(fluorescence_file) {
 
   #Creating dataframe with fluorescence values and ct intensity value from biomem raw qPCR file
@@ -217,7 +217,7 @@ process_biomeme23_uploaded_file <- function(fluorescence_file) {
   return (qpcr_biomem23_fluorescence)
 }
 
-#' @export
+
 merge_standardCurve_metadata_fluorescence_file <- function(fluorescence_File, metadata) {
 
   #Remove null records (controls or empty runs) and associated fluorescence
@@ -314,7 +314,7 @@ null_records_to_remove_flur <- function(meta_data, fluor_file) {
 
 
 #Function removes null records (controls or empty runs) from metadata file if sample name contains 'null'.
-#' @export
+
 null_records_to_remove_meta <- function(meta_data) {
   if (length(which(grepl("null", tolower(meta_data$sampleName)))) != 0)
   {return (meta_data[-c(which(grepl("null", tolower(meta_data$sampleName)))), ])}
@@ -326,7 +326,7 @@ null_records_to_remove_meta <- function(meta_data) {
 
 
 #Function to add new rows and column names to stepOneplus dataframe
-#' @export
+
 reformat_SOP_Flur_data <- function (flur_data) {
   flur_df <- as.data.frame(matrix(nrow = 0, ncol = 40))
   colnames(flur_df) <-  c(paste0("Cycle_Number", 1:40))
@@ -348,7 +348,7 @@ reformat_SOP_Flur_data <- function (flur_data) {
 
 #Function to format raw StepOnePlus fluorescence file in matrix where each row
 #represent a plate well and each column has the fluorescence value for a cycle.
-#' @export
+
 process_SOP_uploaded_file <- function(fluorescence_file) {
 
   #Remove rows above main table
@@ -392,7 +392,7 @@ process_SOP_uploaded_file <- function(fluorescence_file) {
 
 #Function to format raw StepOnePlus fluorescence file in matrix where each row
 #represent a plate well and each column has the fluorescence value for a cycle, with well names.
-#' @export
+
 process_SOP_uploaded_file_with_well_names <- function(fluorescence_file) {
 
   #Remove rows above main table
@@ -437,7 +437,7 @@ process_SOP_uploaded_file_with_well_names <- function(fluorescence_file) {
 
 }
 #Function to add new rows and column names to stepOneplus dataframe
-#' @export
+
 reformat_SOP_Flur_data <- function (flur_data) {
   flur_df <- as.data.frame(matrix(nrow = 0, ncol = 40))
   colnames(flur_df) <-  c(paste0("Cycle_Number", 1:40))
@@ -459,7 +459,7 @@ reformat_SOP_Flur_data <- function (flur_data) {
 
 #Function to format raw StepOnePlus fluorescence file in matrix where each row
 #represent a plate well and each column has the fluorescence value for a cycle.
-#' @export
+
 process_SOP_uploaded_file <- function(fluorescence_file) {
 
   #Remove rows above main table
@@ -503,7 +503,7 @@ process_SOP_uploaded_file <- function(fluorescence_file) {
 
 #Function to format raw StepOnePlus fluorescence file in matrix where each row
 #represent a plate well and each column has the fluorescence value for a cycle, with well names.
-#' @export
+
 process_SOP_uploaded_file_with_well_names <- function(fluorescence_file) {
 
   #Remove rows above main table
@@ -551,7 +551,7 @@ process_SOP_uploaded_file_with_well_names <- function(fluorescence_file) {
 
 #Function to format raw Biomeme two3/Franklin fluorescence file in matrix where each row
 # represent a plate well and each column has the fluorescence value for a cycle with well names.
-#' @export
+
 process_biomeme23_uploaded_file_with_well_names <- function(fluorescence_file) {
 
   #Creating dataframe with fluorescence values from biomem raw qPCR file
@@ -577,7 +577,7 @@ process_biomeme23_uploaded_file_with_well_names <- function(fluorescence_file) {
 
 #Function to format raw StepOnePlus fluorescence file in matrix where each row
 #represent a plate well and each column has the fluorescence value for a cycle, with well names.
-#' @export
+
 process_SOP_uploaded_file_with_well_names <- function(fluorescence_file) {
 
   #Remove rows above main table
@@ -623,57 +623,54 @@ process_SOP_uploaded_file_with_well_names <- function(fluorescence_file) {
 }
 
 # Function that calculates LOD and LOQ for the standard curve data using the generic method
-#' @export
-calculate_SC_LOD_LOQ <- function(merged_file, LOQthreshold){
-  LOD.Data <- merged_file[, c("standardCurveName", "runRecordedBy", "systemCalculatedCqValue", "standardConc")]
-  # rename the columns to match the calculation
+calculate_SC_LOD_LOQ <- function(merged_file, LOQthreshold, cycles){
 
-  colnames(LOD.Data) <- c("Target", "Lab", "Cq", "SQ")
 
-  # now set a condition that will change all Cq of 40s to NA
-  LOD.Data$Cq[which(LOD.Data$Cq==40)] <- NA
+print("standard_curve_helpers - calculate_SC_LOD_LOQ - BEGIN")
 
-  # Step 2: Determine the dilutions used in the standard curve for the target
-  Standards <- unique(LOD.Data$SQ[!is.na(LOD.Data$SQ)])
+  # Step 1: Change all mdmaprCq with the max qPCR cycle to NA
+  merged_file$mdmaprCq[which(merged_file$mdmaprCq==cycles)] <- NA
 
-  # Step 3: Calculate the rate of detection for each standard (any well with a Cq value is considered a detection)
+  # Step 2: Determine the dilutions used in the standard curve
+  Standards <- unique(merged_file$resultTemplateConcInCopy[!is.na(merged_file$resultTemplateConcInCopy)])
+
+  # Step 3: Calculate the rate of detection for each standard (any well with a mdmaprCq value is considered a detection)
   # Calculate other metrics for LOQ calculations (Cq mean, standard deviation, coefficient of variation)
-  DAT2 <- data.frame(Standards=Standards,Target=LOD.Data$Target[1],Reps=NA,Detects=NA,Cq.mean=NA,
-                     Cq.sd=NA,Cq.CV=NA)
+  DAT2 <- data.frame(Standards=Standards,Reps=NA,Detects=NA,mdmaprCq.mean=NA,
+                     mdmaprCq.sd=NA,mdmaprCq.CV=NA)
 
   for(i in 1:nrow(DAT2)) {
-    DAT2$Reps[i] <- sum(LOD.Data$SQ==DAT2$Standards[i],na.rm=TRUE)
-    DAT2$Detects[i] <- sum(!is.na(LOD.Data$Cq)&LOD.Data$SQ==DAT2$Standards[i],na.rm=TRUE)
+    DAT2$Reps[i] <- sum(merged_file$resultTemplateConcInCopy==DAT2$Standards[i],na.rm=TRUE)
+    DAT2$Detects[i] <- sum(!is.na(merged_file$mdmaprCq)&merged_file$resultTemplateConcInCopy==DAT2$Standards[i],na.rm=TRUE)
     DAT2$DetectionRate[i] <- DAT2$Detects[i]/DAT2$Reps[i]
-    DAT2$Cq.mean[i] <- mean(LOD.Data$Cq[LOD.Data$SQ==DAT2$Standards[i]],na.rm=TRUE)
-    DAT2$Cq.sd[i] <- sd(LOD.Data$Cq[LOD.Data$SQ==DAT2$Standards[i]],na.rm=TRUE)
-    DAT2$Cq.CV[i] <- sqrt(2^(DAT2$Cq.sd[i]^2*log(2))-1)
+    DAT2$mdmaprCq.mean[i] <- mean(merged_file$mdmaprCq[merged_file$resultTemplateConcInCopy==DAT2$Standards[i]],na.rm=TRUE)
+    DAT2$mdmaprCq.sd[i] <- sd(merged_file$mdmaprCq[merged_file$resultTemplateConcInCopy==DAT2$Standards[i]],na.rm=TRUE)
+    DAT2$mdmaprCq.CV[i] <- sqrt(2^(DAT2$mdmaprCq.sd[i]^2*log(2))-1)
   }
 
   # Step 4: Determine the lowest concentration with at least a 95% detection rate
   # we want to assess whether a concentration above the LOD has greater variation
 
   warning <- "No Warning"
-  A <- min(DAT2$Standards[DAT2$DetectionRate>=0.95])
-  LOD <- A
+  LOD <- min(DAT2$Standards[DAT2$DetectionRate>=0.95])
   if(length(which(DAT2$DetectionRate<0.95))>0) {
     B <- max(DAT2$Standards[DAT2$DetectionRate<0.95])
-    if(B>A) {
-      warning <- paste0("WARNING: For ",LOD.Data$Target[1],", ",B," copies/reaction standard detected at lower rate than ",A," copies/reaction standard.Please retest.")
+    if(B>LOD) {
+      warning <- paste0("WARNING: For ",merged_file$list_of_curves[1],", ",B," copies/reaction standard detected at lower rate than ",LOD," copies/reaction standard.Please retest.")
     }
   }
   if(length(which(DAT2$DetectionRate<0.95))==0) {
-    warning <- paste0("WARNING: LoD cannot be determined for ",LOD.Data$Target[1],", because it is lower than the lowest standard you tested.Report as <",A," copies/reaction, or retest with lower concentrations.")
+    warning <- paste0("WARNING: LoD cannot be determined for ",merged_file$list_of_curves[1],", because it is lower than the lowest standard you tested. Report as <",LOD," copies/reaction, or retest with lower concentrations.")
   }
 
+  # Step 5: Find the LOQ value (lowest standard concentration that can be quantified
+  # with a CV value below the defined threshold). Default CV value will be 35%.
+  LOQ <- min(DAT2$Standards[DAT2$mdmaprCq.CV<as.numeric(LOQthreshold)], na.rm = TRUE)
 
-  # Step 5: Find the LOQ value (lowest standard concentration that can be quantified with a CV value below the defined threshold). Default CV value will be 35%.
-  threshold <- as.numeric(LOQthreshold)
-  LOQ <- min(DAT2$Standards[DAT2$Cq.CV<threshold], na.rm = T)
+  # Step 6: return the calculated values
+  merged_file<-data.frame(built_unique_ID=merged_file$built_unique_ID, list_of_curves=merged_file$list_of_curves[1], LOD=LOD,warning=warning, LOQ = LOQ )
 
-  merged_file$systemCalculatedLOD <- LOD
-  merged_file$LODWarning <- warning
-  merged_file$systemCalculatedLOQ <- LOQ
+  print("standard_curve_helpers - calculate_SC_LOD_LOQ - END")
 
   return(merged_file)
 }

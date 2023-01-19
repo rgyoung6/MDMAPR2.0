@@ -1,40 +1,43 @@
 
 dataImport <- function() {
-  shinydashboard::tabItem(tabName = "dataImport",
-                          shiny::h1(shiny::strong("Data Import")),
-          shiny::fluidRow(
-            shiny::column(width = 6,
-                       shinydashboard::box(title = htmltools::span(shiny::icon("upload"), "Upload Data"), status = "info",
-                       width = 12, solidHeader = TRUE,collapsible = T, collapsed = F,
-                       #qPCR Data file upload
-                       shiny::p("Upload files here if you are uploading data for the first time in MDMAPR."),
-                       #Upload qPCR experimental fluorescence file
-                       shiny::fileInput("qpcr_file",
-                                 "Upload qPCR Experimental Fluorescence File (RDML)",
-                                 multiple = FALSE,
-                                 accept = c(".rdml"), width="500px"),
-
-                       #Upload metadata file
-                       shiny::fileInput("metadata_file", "Upload Filled MDMAPR Metadata File (tsv)", width="500px",
-                                 multiple = FALSE,
-                                 accept = c(".tsv")),
-                       shiny::fluidRow(shiny::column(12,textOutput("error_msg"))),
-                       shiny::fluidRow(
-                         shiny::column(6, actionButton("submit",
-                                                "Submit  Files")),
-                         shiny::column(6, actionButton("resetDataImport",
-                                                "Reset Files")))
-                   )),# end of upload data box and column
-
-            shiny::column(width = 6,
-                   shinydashboard::box(title = span( icon("file-export"), "Data Export"),
-                                       status="info", solidHeader=TRUE, width=12,collapsible = T,collapsed = F,
-                      shiny::p("Download all data that are loaded into this instance of MDMAPR in either a large data table or for the raw absorbance data in RDML format."),
-                      shiny::fluidRow(
-                        shiny::column(6, downloadButton(outputId="downloadMDMAPRTable",label="MDMAPR metadata file")),
-                        shiny::column(6, downloadButton(outputId="downloadRDMLFile",label="RDML file")))
-                   ) # end of export data box
-      )#End of right column
-    )#End of establishing rows
-  )# End of tab element
-}
+  shinydashboard::tabItem(tabName = "dataImport",shiny::h1(shiny::strong("Data Import and Export")),
+    br(),
+    shinydashboard::box(title = "File Selection", status = "info",width = 12, solidHeader = TRUE,
+      shiny::column(width = 12,
+        shiny::p("There are three options for file selection before submission:
+                 1. Select an RDML file with an associated MDMAPR data file.
+                 2. Only select a MDMAPR file with complete data.
+                 3. Only select an RDML file (as long as associated data are already loaded in this instance of MDMAPR)."),
+        br(),
+        shiny::fluidRow(
+          shiny::column(width = 12,
+            #Upload qPCR experimental fluorescence file
+            shiny::fluidRow(
+              #Data file upload
+              column(3,actionButton("qpcr_file_button", "RDML", icon = icon("magnifying-glass"))),
+              column(3,textOutput("qpcr_file_out")),
+              #Upload metadata file
+              column(3,actionButton("metadata_file_button","MDMAPR", icon = icon("magnifying-glass"))),
+              column(3,textOutput("metadata_file_out"))
+            )
+          )
+        )
+      )#Closing the full column width
+    ),#closing the full width first box
+    shinydashboard::box(title = "Actions",status = "info",width = 12, solidHeader = TRUE,
+      shiny::column(width = 12,
+        shiny::p("There are three options:
+                 1. Submit the selected files.
+                 2. Reset the file selections.
+                 3. Download the data present in this instance of MDMAPR (output is a .tsv MDMAPR file format."),
+        br(),
+        shiny::fluidRow(
+          shiny::column(3, actionButton("submit","Submit File Selection", icon = icon("play-circle"))),
+          shiny::column(3, actionButton("resetDataImport","Reset File Selection", icon = icon("refresh"))),
+          column(3,textOutput("data_present")),
+          shiny::column(3, downloadButton(outputId="downloadMDMAPRTable",label="Data (MDMAPR File)"))
+        )
+      )
+    )#Closing the full width second box
+  )#Closing the tab item
+}#Closing the function

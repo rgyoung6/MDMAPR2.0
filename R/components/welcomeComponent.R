@@ -2,27 +2,20 @@
 welcomeComponent <- function() {
   shinydashboard::tabItem(tabName = "welcomepage",
           includeHTML("R/components/home.html"),
-          shiny::tags$script(src = "plugins/scripts.js"),
-          shiny::tags$head(
-            shiny::tags$link(rel = "stylesheet",
-                      type = "text/css",
-                      href = "plugins/font-awesome-4.7.0/css/font-awesome.min.css"),
-            shiny::tags$link(rel = "icon",
-                      type = "image/png",
-                      href = system.file("www/logo_icon.png", "MDMAPR2.0"))
-          ),
-          shiny::br(),
-          box(title = "Vignettes",
-              status = "primary", solidHeader = TRUE,
-              width = 12,
-              fluidRow(
-                #shiny::column(11,fluidPage(includeMarkdown("./R/MDMAPR_Vignettes.Rmd")))
-              )),
-          shiny::br(),
 
-          shiny::h1(shiny::strong("FAQs")),
+          shiny::h1(shiny::strong("Resources")),
 
           shiny:: br(),
+
+          fluidRow(box(
+            title = shiny::p("Vignettes",
+                             style = "font-size:16px;"),
+            status = "primary",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            collapsed = TRUE,
+            width = 12,
+            shiny::p("Information on the vignettes will go here."))),
 
           fluidRow(box(
             title = shiny::p("Metadata Template",
@@ -40,17 +33,6 @@ welcomeComponent <- function() {
                            style = "font-size:16px;
                                              color:#F4412E;
                                               text-decoration: underline;"))
-          )),
-
-          fluidRow(box(
-            title = shiny::p("How are target copy numbers calculated?",
-                      style = "font-size:16px;"),
-            status = "primary",
-            solidHeader = TRUE,
-            collapsible = TRUE,
-            collapsed = TRUE,
-            width = 12,
-            shiny::p("If standard curve fluorescence values and metadata are provided, the system will calculate the second derivative threshold and Cq Value. These are related to the DNA copy number value by a linear model and used to estimate copy number in the experimental samples.")
           )),
 
           fluidRow(box(

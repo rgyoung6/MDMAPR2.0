@@ -30,20 +30,12 @@ dashBoardBodyComponent <- function() {
       #qPCR Data Overview page ---------------------------
       qPCRDataOverviewComponent(),
 
-      #Data Submission page  ---------------------------
-      #dataSubmissionComponent(),
-
       #Welcome page ---------------------------
       welcomeComponent(),
 
       #Standard Curve Page ---------------------------
       stdCurve()
 
-      #Get Started page ---------------------------
-      #dataModelling()
-
-      #Std Curve Componenet ---------------------------
-      #stdCurve()
     )
   )
 }
