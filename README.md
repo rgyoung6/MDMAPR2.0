@@ -26,9 +26,6 @@ launchMDMAPR()
 ## If fluorescence data is not in RDML...
 
 ## Mapping Dashboard
-
-<kbd><img src="images/mapping_dashboard.png" width=600></kbd>
-
 The Mapping Dashboard is used to perform geospatial analysis on qPCR run
 samples. On this page, an interactive map displays location markers for
 qPCR run sample collection locations and allows for filtering of markers
@@ -41,9 +38,6 @@ of the data table can be downloaded as a CSV by pressing the ‘Download
 Mapped Markers Metadata’ button.
 
 ## Data Overview Page
-
-<kbd><img src="images/data_overview.png" width=600></kbd>
-
 The Data Overview page is used to analyze individual tube/well samples
 and facilitates the quality control inspection of data. The page has
 four tabs, which include the ‘Presence/Absence Samples’, ‘Amplification
@@ -58,9 +52,6 @@ related to the standard curve used for the samples in the
 shows the plotted standard curve.
 
 ## Data Submission page
-
-<kbd><img src="images/data_submission.png" width=600></kbd>
-
 The Data Submission page is used to format raw qPCR fluorescence data
 and associated metadata into a format that is acceptable to be added to
 the MDMAPR 2.0 database for storage. On this page, a raw qPCR
