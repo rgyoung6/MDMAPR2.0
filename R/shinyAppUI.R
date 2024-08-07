@@ -290,24 +290,24 @@ shinyAppUI <- shinydashboard::dashboardPage(
               fluidRow(
                 column(6,
                   # shiny::h4("Select Data Groups"),
-                  shiny::checkboxGroupInput("groups", "Show Groups:",
+                  shiny::checkboxGroupInput("groupsCq", "Show Groups:",
                     choices = list(
-                      "MDMAPR - Blue" = "mdmapr",
-                      "Users - Red" = "resultUserProv"
+                      "MDMAPR - Blue" = "mdmaprCqCq",
+                      "Users - Red" = "resultUserProvCqCq"
                     ),
-                    selected = c("mdmapr", "resultUserProv"))
+                    selected = c("mdmaprCqCq", "resultUserProvCqCq"))
                 ),
                 column(6,
                   # shiny::h4("Select Elements"),
-                  shiny::checkboxGroupInput("elements", "Show Elements:",
+                  shiny::checkboxGroupInput("elementsCq", "Show Elements:",
                     choices = list(
-                      "Threshold - Dashed Horz." = "thres",
-                      "LOD - Circles" = "lod",
-                      "LOQ - Triangles" = "loq",
-                      "Cq - Squares" = "cq",
-                      "Log Linear Area - Shaded" = "loglinear"
+                      "Threshold - Dashed Horz." = "thresCq",
+                      "LOD - Circles" = "lodCq",
+                      "LOQ - Triangles" = "loqCq",
+                      "Cq - Squares" = "cqCq",
+                      "Log Linear Area - Shaded" = "loglinearCq"
                     ),
-                    selected = c("thres", "lod", "loq","cq", "loglinear"),
+                    selected = c("thresCq", "lodCq", "loqCq","cqCq", "loglinearCq"),
                     inline = TRUE)
                 )),
               plotly::plotlyOutput("qPCROverviewPlot")
@@ -320,36 +320,26 @@ shinyAppUI <- shinydashboard::dashboardPage(
       shinydashboard::tabItem(tabName = "stdCurve",
         shiny::h1(shiny::strong("Standard Curve Analysis")),
         shiny::fluidRow(
-          shinydashboard::box(id = "tabset1",width = 3,height = "800px",
+          shinydashboard::box(id = "SCtabset1",width = 3,height = "800px",
             shiny::fluidRow(shiny::column(12,
-              # shiny::br(),
-              # shiny::p("To analyze standard curve data, upload a qPCR standard curve
-              #           fluorescence file, and a filled in metadata file.",
-              #           style = "font-size:16px;"),
-              # shiny::numericInput(inputId = "LOQthres",label="LOQ Coefficient of Variation Threshold",
-              #                     value=0.35,min=0,max=0.99, step = 0.01),
-              # shiny::br(),
               #Dropdown menu for project - projectID
               shinyWidgets::pickerInput(inputId = "SC_project_input","Project",
                 choices = "None",
                 selected = "None",
                 options = list('actions-box' = TRUE),
                 multiple = TRUE),
-#              shiny::br(),
               #Dropdown menu for assay - assayID
               shinyWidgets::pickerInput(inputId = "SC_assay_input", "Assay",
                 choices = "None",
                 selected = "None",
                 options = list('actions-box' = TRUE),
                 multiple = TRUE),
-#              shiny::br(),
               #Dropdown menu for run type - resultRunID
               shinyWidgets::pickerInput(inputId = "SC_run_input", "Run",
                 choices = "None",
                 selected = "None",
                 options = list('actions-box' = TRUE),
                 multiple = TRUE),
-#              shiny::br(),
               #Dropdown menu for machine type - resultPlatform
               shinyWidgets::pickerInput(inputId = "SC_platform_input", "Platform",
                 choices = "None",
@@ -362,7 +352,6 @@ shinyAppUI <- shinydashboard::dashboardPage(
                 selected = "None",
                 options = list('actions-box' = TRUE),
                 multiple = TRUE),
-#              shiny::br(),
               #Wells in the standard Curve - resultStdCurveID
               shinyWidgets::pickerInput(inputId = "SC_curve_input",label = "Standard Curve",
                 choices = "None",
@@ -386,40 +375,24 @@ shinyAppUI <- shinydashboard::dashboardPage(
               ),
               shiny::br(),
               shiny::fluidRow(
-                shiny::column(5,
-                  shiny::actionButton("SC_recalib","Calibrate Curve")
-                ),
+                # shiny::column(5,
+                #   shiny::actionButton("SC_recalib","Calibrate Curve")
+                # ),
                 shiny::column(5,
                   shiny::actionButton("SC_Remove","Remove Selected From Curve")
                 )
               )
-              # shinydashboard::box(width = NULL, solidHeader = TRUE,collapsible = TRUE, collapsed = F,
-              #   title = "LOD Calculation Messages",
-              #   status = "warning",shiny::column(12, shiny::textOutput("text")))
             ))# end of fluid row
           ),#end of box
           #Standard curve plot
           shinydashboard::box(title = shiny::strong("Standard Curve Analysis"),id = "data_analysis_box",
-          # shinydashboard::tabBox(title = shiny::strong("Standard Curve Analysis"),id = "data_analysis_box",
              height = "1000px",width = 9,
-          #   shiny::tabPanel("Standard Curve Data Overview",
-          #     shiny::strong("Data from the 'Standard Curve Data Overview' table is visualized in the 'Standard Curve Plot' tab."),
-          #       DT::dataTableOutput('SC_overview_table')
-          #   ),
-            shiny::tabPanel("Standard Curve Plot",
-              # shiny::strong("The residual gradient colour scheme depicts how well
-              #   the standard curve fits the data points. Yellow points
-              #   are best fit by the curve, dark purple points are least
-              #   fit, and orange points are in between."),
+              shiny::tabPanel("Standard Curve Plot",
               shiny::tags$hr(),  # Adds a horizontal line above the fluidRow
               fluidRow(
                 column(6,
-                  shiny::checkboxGroupInput("groups", "Show Groups:",
-                  choices = list(
-                    "MDMAPR" = "mdmapr",
-                    "Users" = "resultUserProv"
-                  ),
-                  selected = c("mdmapr", "resultUserProv"), inline = TRUE)
+                  shiny::radioButtons("groupsSC", "Show Groups:",
+                    c("mdmaprSC", "resultUserProvSC"), inline = TRUE)
                 ),
                 column(6,
                        shiny::br(),

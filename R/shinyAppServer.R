@@ -57,16 +57,6 @@
 #' @importFrom leaflet clearMarkers
 #' @importFrom leaflet clearMarkerClusters
 #' @importFrom leaflet clearPopups
-#' @importFrom shinydashboard box
-#' @importFrom shinydashboard tabItem
-#' @importFrom shinydashboard dashboardBody
-#' @importFrom shinydashboard tabBox
-#' @importFrom shinyWidgets pickerInput
-#' @importFrom shinyWidgets updatePickerInput
-#' @importFrom shinyjs useShinyjs
-#' @importFrom shinyFiles getVolumes
-#' @importFrom shinyFiles shinyFileChoose
-#' @importFrom shinyFiles parseFilePaths
 #' @importFrom plyr rbind.fill
 #' @importFrom plotly plotlyOutput
 #' @importFrom plotly style
@@ -75,6 +65,10 @@
 #' @importFrom plotly renderPlotly
 #' @importFrom plotly plot_ly
 #' @importFrom plotly add_trace
+#' @importFrom reactable getReactableState
+#' @importFrom reactable renderReactable
+#' @importFrom reactable reactable
+#' @importFrom reactable reactableTheme
 #' @importFrom shiny div
 #' @importFrom shiny downloadHandler
 #' @importFrom shiny icon
@@ -115,13 +109,17 @@
 #' @importFrom shiny tabsetPanel
 #' @importFrom shiny shinyApp
 #' @importFrom shiny textOutput
-#' @importFrom utils read.csv
-#' @importFrom utils str
-#' @importFrom utils head
-#' @importFrom utils tail
-#' @importFrom utils zip
-#' @importFrom utils read.table
-#' @importFrom utils write.table
+#' @importFrom shinycssloaders withSpinner
+#' @importFrom shinydashboard box
+#' @importFrom shinydashboard tabItem
+#' @importFrom shinydashboard dashboardBody
+#' @importFrom shinydashboard tabBox
+#' @importFrom shinyWidgets pickerInput
+#' @importFrom shinyWidgets updatePickerInput
+#' @importFrom shinyjs useShinyjs
+#' @importFrom shinyFiles getVolumes
+#' @importFrom shinyFiles shinyFileChoose
+#' @importFrom shinyFiles parseFilePaths
 #' @importFrom stats family
 #' @importFrom stats lm
 #' @importFrom stats mad
@@ -129,14 +127,16 @@
 #' @importFrom stats na.omit
 #' @importFrom stats quantile
 #' @importFrom stats residuals
-#' @importFrom shinycssloaders withSpinner
-
-#another table formatting one I may not need. Right now quoted out
-#' @importFrom reactable getReactableState
-#' @importFrom reactable renderReactable
-#' @importFrom reactable reactable
-#' @importFrom reactable reactableTheme
+#' @importFrom utils read.csv
+#' @importFrom utils str
+#' @importFrom utils head
+#' @importFrom utils tail
+#' @importFrom utils zip
+#' @importFrom utils read.table
+#' @importFrom utils write.table
 #' @import RDML
+#' @import ggplot2
+
 
 
 shinyAppServer <- function(input, output, session) {
@@ -148,8 +148,6 @@ shinyAppServer <- function(input, output, session) {
   #################### Set and.or reset the metadata df ########################
   #Function to reset the MDMAPR Data frame to have no data
   setResetMdmaprDataFile <- function() {
-
-print("setResetMdmaprDataFile - Begin ")
 
     #Set up the programs main data file
     expectedHeaders <- base::c(
@@ -192,7 +190,6 @@ print("setResetMdmaprDataFile - Begin ")
 
     colnames(mdmaprDataFile) <- expectedHeaders
 
-    print("setResetMdmaprDataFile - End ")
     # Return the empty dataframe
     return(mdmaprDataFile)
 
@@ -480,11 +477,6 @@ print("setResetMdmaprDataFile - Begin ")
   ######################## LOD and LOQ calculations ##############################
   # Function that calculates LOD and LOQ for the standard curve data using the generic method
   calculate_SC_LOD_LOQ <- function(merged_file, threshold, detectRate, cycles){
-
-    merged_fileLODLOQ<<-merged_file
-    thresholdLODLOQ <<- threshold
-    detectRateLODLOQ <<- detectRate
-    cyclesLODLOQ <<- cycles
 
 print("calculate_SC_LOD_LOQ - Begin")
 
@@ -829,9 +821,6 @@ print("calculate_SC_LOD_LOQ - Begin")
         #Loop through the different standard curves
         for (list_of_runs_counter in 1:length(list_of_runs)){
 
-          threshold<-0.35 #LOQ value
-          detectRate<-0.95 #LOD value
-
           #Subset the stdCurveDataLoopCurve table for the curve for this loop
           stdCurveDataLoopCurveReaction<-stdCurveDataLoopCurve[stdCurveDataLoopCurve$resultRunID == list_of_runs[list_of_runs_counter],]
 
@@ -846,15 +835,15 @@ print("calculate_SC_LOD_LOQ - Begin")
           submissionData<-stdCurveDataLoopCurveReaction[, base::c("built_unique_ID", "resultUserProvCq", "resultTemplateConcInCopy")]
 
           #Call the calculate_SC_LOD_LOQ function using the subset data.
-          formatted_metadata_SC_Calc_loop_curve<-calculate_SC_LOD_LOQ(submissionData, threshold, detectRate, cycles)
+          formatted_metadata_SC_Calc_loop_curve<-calculate_SC_LOD_LOQ(submissionData, threshold$value, detectRate$value, cycles)
 
           #update the names of the column for the submitted data. The returned values are
           # column 2 - equation,3 - Rsq, 4 - LOD, 5 - LOQ
           names(formatted_metadata_SC_Calc_loop_curve)[2] <- "userStdCurveLineEq"
           names(formatted_metadata_SC_Calc_loop_curve)[3] <- "userStdCurveEfficiency"
           names(formatted_metadata_SC_Calc_loop_curve)[4] <- "userStdCurveRSq"
-          names(formatted_metadata_SC_Calc_loop_curve)[5] <- paste0("userStdCurveLOD",(detectRate*100))
-          names(formatted_metadata_SC_Calc_loop_curve)[6] <- paste0("userStdCurveLOQ",(threshold*100))
+          names(formatted_metadata_SC_Calc_loop_curve)[5] <- paste0("userStdCurveLOD",(detectRate$value*100))
+          names(formatted_metadata_SC_Calc_loop_curve)[6] <- paste0("userStdCurveLOQ",(threshold$value*100))
 
           #Add the userStdCurveLineEq, userStdCurveEfficiency, userStdCurveRSq, userStdCurveLOD95, userStdCurveLOQ35" values to the totalMDMAPRDataFile
           totalMDMAPRDataFile$value <- replace_columns(totalMDMAPRDataFile$value, formatted_metadata_SC_Calc_loop_curve, base::c("userStdCurveLineEq", "userStdCurveEfficiency", "userStdCurveRSq", "userStdCurveLOD95", "userStdCurveLOQ35"))
@@ -865,15 +854,15 @@ print("calculate_SC_LOD_LOQ - Begin")
           submissionData<-stdCurveDataLoopCurveReaction[, base::c("built_unique_ID", "mdmaprCq", "resultTemplateConcInCopy")]
 
           #Call the calculate_SC_LOD_LOQ function using the subset data.
-          formatted_metadata_SC_Calc_loop_curve<-calculate_SC_LOD_LOQ(submissionData, threshold, detectRate, cycles)
+          formatted_metadata_SC_Calc_loop_curve<-calculate_SC_LOD_LOQ(submissionData, threshold$value, detectRate$value, cycles)
 
           #update the names of the column for the submitted data. The returned values are
           # column 2 - equation,3 - Rsq, 4 - LOD, 5 - LOQ
           names(formatted_metadata_SC_Calc_loop_curve)[2] <- "mdmaprStdCurveLineEq"
           names(formatted_metadata_SC_Calc_loop_curve)[3] <- "mdmaprStdCurveEfficiency"
           names(formatted_metadata_SC_Calc_loop_curve)[4] <- "mdmaprStdCurveRSq"
-          names(formatted_metadata_SC_Calc_loop_curve)[5] <- paste0("mdmaprStdCurveLOD",(detectRate*100))
-          names(formatted_metadata_SC_Calc_loop_curve)[6] <- paste0("mdmaprStdCurveLOQ",(threshold*100))
+          names(formatted_metadata_SC_Calc_loop_curve)[5] <- paste0("mdmaprStdCurveLOD",(detectRate$value*100))
+          names(formatted_metadata_SC_Calc_loop_curve)[6] <- paste0("mdmaprStdCurveLOQ",(threshold$value*100))
 
           #Add the mdmaprStdCurveLineEq, mdmaprStdCurveEfficiency, mdmaprStdCurveRSq, mdmaprStdCurveLOD95, mdmaprStdCurveLOQ35" values to the totalMDMAPRDataFile
           totalMDMAPRDataFile$value <- replace_columns(totalMDMAPRDataFile$value, formatted_metadata_SC_Calc_loop_curve, base::c("mdmaprStdCurveLineEq", "mdmaprStdCurveEfficiency", "mdmaprStdCurveRSq", "mdmaprStdCurveLOD95", "mdmaprStdCurveLOQ35"))
@@ -1444,6 +1433,23 @@ print("filterOptionsUpdate - End ")
 
   }
 
+  ################## Reset the standard curve plot #############################
+
+  clearStandardCurve_plot <- function (){
+    # Initial plot rendering with empty data
+    output$standardCurve_plot <- plotly::renderPlotly({
+      plotly::plot_ly() %>%
+        plotly::layout(
+          title = "Source Data",
+          xaxis = list(title = "Log Concentration"),
+          yaxis = list(title = "Cq Values"),
+          coloraxis = list(colorbar = list(title = NULL))
+        )
+    })
+  }
+
+
+
   ############## Initialize variables #########################################
 
   #dataImport file location reactive values
@@ -1483,7 +1489,15 @@ print("filterOptionsUpdate - End ")
   filteredqPCRDataOverview <- shiny::reactiveValues(value = setResetMdmaprDataFile())
 
   #Set Standard Curve Analysis datasheet so that section is ready
-  filteredqStdCurveAnalysis <- shiny::reactiveValues(value = setResetMdmaprDataFile())
+  filteredStdCurveAnalysis <- shiny::reactiveValues(value = setResetMdmaprDataFile())
+
+  #Set Standard Curve data to remove
+  SCRemoveValues <- shiny::reactiveValues(value = setResetMdmaprDataFile())
+  SCKeepValues <- shiny::reactiveValues(value = setResetMdmaprDataFile())
+
+  # Set the LOD and LOQ threshold and detect rate for the entire program
+  threshold <- shiny::reactiveValues(value = 0.35)#LOQ value
+  detectRate <- shiny::reactiveValues(value = 0.95)#LOD value
 
   ####################### Data reset button ####################################
   observeEvent(input$resetDataImport, {
@@ -1777,9 +1791,9 @@ print("overwrite_dataMetaOnly - End")
       #qPCR Overview datasheet so that section is ready
       filteredqPCRDataOverview$value <- filtered$value
       #Set Standard Curve Analysis datasheet so that section is ready
-      filteredqStdCurveAnalysis$value <- filtered$value
+      filteredStdCurveAnalysis$value <- filtered$value
       # Remove any unk data as this needs to be opt or ntc data for standard curves
-      filteredqStdCurveAnalysis$value <- filteredqStdCurveAnalysis$value[filteredqStdCurveAnalysis$value$resultSampleType != "unkn",,drop=FALSE]
+      filteredStdCurveAnalysis$value <- filteredStdCurveAnalysis$value[filteredStdCurveAnalysis$value$resultSampleType != "unkn",,drop=FALSE]
 
 
     }
@@ -2158,9 +2172,9 @@ built_unique_IDGlobalRDMLMeta6<<-built_unique_ID
     filteredqPCRDataOverview$value <- totalMDMAPRDataFile$value
 
     #Set Standard Curve Analysis datasheet so that section is ready
-    filteredqStdCurveAnalysis$value <- totalMDMAPRDataFile$value
+    filteredStdCurveAnalysis$value <- totalMDMAPRDataFile$value
     # Remove any unk data as this needs to be opt or ntc data for standard curves
-    filteredqStdCurveAnalysis$value <- filteredqStdCurveAnalysis$value[filteredqStdCurveAnalysis$value$resultSampleType != "unkn",,drop=FALSE]
+    filteredStdCurveAnalysis$value <- filteredStdCurveAnalysis$value[filteredStdCurveAnalysis$value$resultSampleType != "unkn",,drop=FALSE]
 
     #Initially set the results for the mapping to the user supplied Cq
     mappedValueVal$value <- "resultUserProvCq"
@@ -2246,31 +2260,31 @@ totalMDMAPRDataFileGlobalEndofDataSubmit<<-totalMDMAPRDataFile$value
 
       #Populate the pickers
       updatePickerInput(session, "SC_project_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$projectID),
+                        choices = unique(filteredStdCurveAnalysis$value$projectID),
                         selected =  NULL)
 
       updatePickerInput(session, "SC_assay_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$assayID),
+                        choices = unique(filteredStdCurveAnalysis$value$assayID),
                         selected =  NULL)
 
       updatePickerInput(session, "SC_run_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$resultRunID),
+                        choices = unique(filteredStdCurveAnalysis$value$resultRunID),
                         selected =  NULL)
 
       updatePickerInput(session, "SC_platform_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$resultPlatform),
+                        choices = unique(filteredStdCurveAnalysis$value$resultPlatform),
                         selected =  NULL)
 
       updatePickerInput(session, "SC_machine_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$resultMachineID),
+                        choices = unique(filteredStdCurveAnalysis$value$resultMachineID),
                         selected =  NULL)
 
       updatePickerInput(session, "SC_curve_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$resultStdCurveID),
+                        choices = unique(filteredStdCurveAnalysis$value$resultStdCurveID),
                         selected =  NULL)
 
       updatePickerInput(session, "SC_react_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$resultReactID),
+                        choices = unique(filteredStdCurveAnalysis$value$resultReactID),
                         selected =  NULL)
     }
   },ignoreInit = TRUE)
@@ -2514,32 +2528,32 @@ print("Begin observe -  input$mapTabs == Mapping")
                             name = "Raw Absorbance")
 
         # Add mdmapr data if checkbox is checked
-        if ("mdmapr" %in% input$groups) {
-          if ("thres" %in% input$elements) {
+        if ("mdmaprCqCq" %in% input$groupsCq) {
+          if ("thresCq" %in% input$elementsCq) {
             p <- p %>%
               plotly::add_trace(x = c(min(filtered_cycles), max(filtered_cycles)), y = rep(mdmapr_Thres, 2),
                                 type = 'scatter', mode = 'lines', line = list(dash = 'dash', color = 'blue'),
                                 name = 'mdmapr Threshold')
           }
-          if ("lod" %in% input$elements) {
+          if ("lodCq" %in% input$elementsCq) {
             p <- p %>%
               plotly::add_trace(x = c(rep(mdmapr_LOD, length(filtered_cycles))), y = seq(0, floor(y_max), by = floor(y_max) / (length(filtered_cycles)-1)),
                                 type = 'scatter', mode = 'markers', marker = list(symbol = 'circle', color = 'blue', size = 4),
                                 name = 'mdmapr LOD')
           }
-          if ("loq" %in% input$elements) {
+          if ("loqCq" %in% input$elementsCq) {
             p <- p %>%
               plotly::add_trace(x = c(rep(mdmapr_LOQ, length(filtered_cycles))), y = seq(0, floor(y_max), by = floor(y_max) / (length(filtered_cycles)-1)),
                                 type = 'scatter', mode = 'markers', marker = list(symbol = 'triangle-up', color = 'blue', size = 4),
                                 name = 'mdmapr LOQ')
           }
-          if ("cq" %in% input$elements) {
+          if ("cqCq" %in% input$elementsCq) {
             p <- p %>%
               plotly::add_trace(x = c(rep(mdmapr_Cq, length(filtered_cycles))), y = seq(0, floor(y_max), by = floor(y_max) / (length(filtered_cycles)-1)),
                                 type = 'scatter', mode = 'markers', marker = list(symbol = 'square', color = 'blue', size = 4),
                                 name = 'mdmapr Cq')
           }
-          if ("loglinear" %in% input$elements) {
+          if ("loglinearCq" %in% input$elementsCq) {
             p <- p %>%
               plotly::add_trace(x = c(as.numeric(mdmapr_LogLinear[1]), as.numeric(mdmapr_LogLinear[1]), as.numeric(mdmapr_LogLinear[2]), as.numeric(mdmapr_LogLinear[2])),
                                 y = c(0, y_max, y_max, 0),
@@ -2549,32 +2563,32 @@ print("Begin observe -  input$mapTabs == Mapping")
         }
 
         # Add resultUserProv data if checkbox is checked
-        if ("resultUserProv" %in% input$groups) {
-          if ("thres" %in% input$elements) {
+        if ("resultUserProvCqCq" %in% input$groupsCq) {
+          if ("thresCq" %in% input$elementsCq) {
             p <- p %>%
               plotly::add_trace(x = c(min(filtered_cycles), max(filtered_cycles)), y = rep(resultUserProv_Thres, 2),
                                 type = 'scatter', mode = 'lines', line = list(dash = 'dash', color = 'red'),
                                 name = 'resultUserProv Threshold')
           }
-          if ("lod" %in% input$elements) {
+          if ("lodCq" %in% input$elementsCq) {
             p <- p %>%
               plotly::add_trace(x = c(rep(resultUserProv_LOD, length(filtered_cycles))), y = seq(0, floor(y_max), by = floor(y_max) / (length(filtered_cycles)-1)),
                                 type = 'scatter', mode = 'markers', marker = list(symbol = 'circle', color = 'red', size = 4),
                                 name = 'resultUserProv LOD')
           }
-          if ("loq" %in% input$elements) {
+          if ("loqCq" %in% input$elementsCq) {
             p <- p %>%
               plotly::add_trace(x = c(rep(resultUserProv_LOQ, length(filtered_cycles))), y = seq(0, floor(y_max), by = floor(y_max) / (length(filtered_cycles)-1)),
                                 type = 'scatter', mode = 'markers', marker = list(symbol = 'triangle-up', color = 'red', size = 4),
                                 name = 'resultUserProv LOQ')
           }
-          if ("cq" %in% input$elements) {
+          if ("cqCq" %in% input$elementsCq) {
             p <- p %>%
               plotly::add_trace(x = c(rep(resultUserProv_Cq, length(filtered_cycles))), y = seq(0, floor(y_max), by = floor(y_max) / (length(filtered_cycles)-1)),
                                 type = 'scatter', mode = 'markers', marker = list(symbol = 'square', color = 'red', size = 4),
                                 name = 'resultUserProv Cq')
           }
-          if ("loglinear" %in% input$elements) {
+          if ("loglinearCq" %in% input$elementsCq) {
             p <- p %>%
               plotly::add_trace(x = c(as.numeric(resultUserProv_LogLinear[1]), as.numeric(resultUserProv_LogLinear[1]), as.numeric(resultUserProv_LogLinear[2]), as.numeric(resultUserProv_LogLinear[2])),
                                 y = c(0, y_max, y_max, 0),
@@ -2598,43 +2612,60 @@ print("Begin observe -  input$mapTabs == Mapping")
   },ignoreInit = TRUE)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   ################## Standard Curve Reset Selections ###########################
   shiny::observeEvent(input$SC_reset, {
 
-    filteredqStdCurveAnalysis$value <- filtered$value
+    filteredStdCurveAnalysis$value <- filtered$value
     # Remove any unk data as this needs to be opt or ntc data for standard curves
-    filteredqStdCurveAnalysis$value <- filteredqStdCurveAnalysis$value[filteredqStdCurveAnalysis$value$resultSampleType != "unkn",,drop=FALSE]
+    filteredStdCurveAnalysis$value <- filteredStdCurveAnalysis$value[filteredStdCurveAnalysis$value$resultSampleType != "unkn",,drop=FALSE]
 
     #Populate the pickers
     print("In the Standard Curve reset button")
 
     #Populate the pickers
     updatePickerInput(session, "SC_project_input",
-                      choices = unique(filteredqStdCurveAnalysis$value$projectID),
+                      choices = unique(filteredStdCurveAnalysis$value$projectID),
                       selected =  NULL)
 
     updatePickerInput(session, "SC_assay_input",
-                      choices = unique(filteredqStdCurveAnalysis$value$assayID),
+                      choices = unique(filteredStdCurveAnalysis$value$assayID),
                       selected =  NULL)
 
     updatePickerInput(session, "SC_run_input",
-                      choices = unique(filteredqStdCurveAnalysis$value$resultRunID),
+                      choices = unique(filteredStdCurveAnalysis$value$resultRunID),
                       selected =  NULL)
 
     updatePickerInput(session, "SC_platform_input",
-                      choices = unique(filteredqStdCurveAnalysis$value$resultPlatform),
+                      choices = unique(filteredStdCurveAnalysis$value$resultPlatform),
                       selected =  NULL)
 
     updatePickerInput(session, "SC_machine_input",
-                      choices = unique(filteredqStdCurveAnalysis$value$resultMachineID),
+                      choices = unique(filteredStdCurveAnalysis$value$resultMachineID),
                       selected =  NULL)
 
     updatePickerInput(session, "SC_curve_input",
-                      choices = unique(filteredqStdCurveAnalysis$value$resultStdCurveID),
+                      choices = unique(filteredStdCurveAnalysis$value$resultStdCurveID),
                       selected =  NULL)
 
     updatePickerInput(session, "SC_react_input",
-                      choices = unique(filteredqStdCurveAnalysis$value$resultReactID),
+                      choices = unique(filteredStdCurveAnalysis$value$resultReactID),
                       selected =  NULL)
 
     output$standardCurve_plot <- NULL
@@ -2655,1291 +2686,350 @@ print("Begin observe -  input$mapTabs == Mapping")
     SCSelectReactID <- input$SC_react_input
 
     if(!is.null(SCSelectProjectID)){
-      filteredqStdCurveAnalysis$value <- filteredqStdCurveAnalysis$value[filteredqStdCurveAnalysis$value$projectID %in% SCSelectProjectID,,drop=FALSE]
+      filteredStdCurveAnalysis$value <- filteredStdCurveAnalysis$value[filteredStdCurveAnalysis$value$projectID %in% SCSelectProjectID,,drop=FALSE]
     }
     if(!is.null(SCSelectAssayID)){
-      filteredqStdCurveAnalysis$value <- filteredqStdCurveAnalysis$value[filteredqStdCurveAnalysis$value$assayID %in% SCSelectAssayID,,drop=FALSE]
+      filteredStdCurveAnalysis$value <- filteredStdCurveAnalysis$value[filteredStdCurveAnalysis$value$assayID %in% SCSelectAssayID,,drop=FALSE]
     }
     if(!is.null(SCSelectRunID)){
-      filteredqStdCurveAnalysis$value <- filteredqStdCurveAnalysis$value[filteredqStdCurveAnalysis$value$resultRunID %in% SCSelectRunID,,drop=FALSE]
+      filteredStdCurveAnalysis$value <- filteredStdCurveAnalysis$value[filteredStdCurveAnalysis$value$resultRunID %in% SCSelectRunID,,drop=FALSE]
     }
     if(!is.null(SCSelectPlatformID)){
-      filteredqStdCurveAnalysis$value <- filteredqStdCurveAnalysis$value[filteredqStdCurveAnalysis$value$resultPlatform %in% SCSelectPlatformID,,drop=FALSE]
+      filteredStdCurveAnalysis$value <- filteredStdCurveAnalysis$value[filteredStdCurveAnalysis$value$resultPlatform %in% SCSelectPlatformID,,drop=FALSE]
     }
     if(!is.null(SCSelectMachineID)){
-      filteredqStdCurveAnalysis$value <- filteredqStdCurveAnalysis$value[filteredqStdCurveAnalysis$value$resultMachineID %in% SCSelectMachineID,,drop=FALSE]
+      filteredStdCurveAnalysis$value <- filteredStdCurveAnalysis$value[filteredStdCurveAnalysis$value$resultMachineID %in% SCSelectMachineID,,drop=FALSE]
     }
     if(!is.null(SCSelectCurveID)){
-      filteredqStdCurveAnalysis$value <- filteredqStdCurveAnalysis$value[filteredqStdCurveAnalysis$value$resultStdCurveID %in% SCSelectCurveID,,drop=FALSE]
-    }
-    if(!is.null(SCSelectReactID)){
-      filteredqStdCurveAnalysis$value <- filteredqStdCurveAnalysis$value[filteredqStdCurveAnalysis$value$resultReactID %in% SCSelectReactID,,drop=FALSE]
+      filteredStdCurveAnalysis$value <- filteredStdCurveAnalysis$value[filteredStdCurveAnalysis$value$resultStdCurveID %in% SCSelectCurveID,,drop=FALSE]
     }
 
-
-    if(length(unique(filteredqStdCurveAnalysis$value$projectID))==1){
+    if(length(unique(filteredStdCurveAnalysis$value$projectID))==1){
       updatePickerInput(session, "SC_project_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$projectID),
-                        selected = unique(filteredqStdCurveAnalysis$value$projectID))
+                        choices = unique(filteredStdCurveAnalysis$value$projectID),
+                        selected = unique(filteredStdCurveAnalysis$value$projectID))
     }else if(!is.null(SCSelectProjectID)){
       updatePickerInput(session, "SC_project_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$projectID),
+                        choices = unique(filteredStdCurveAnalysis$value$projectID),
                         selected = SCSelectProjectID)
     }
-    if(length(unique(filteredqStdCurveAnalysis$value$assayID))==1){
+    if(length(unique(filteredStdCurveAnalysis$value$assayID))==1){
       updatePickerInput(session, "SC_assay_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$assayID),
-                        selected = unique(filteredqStdCurveAnalysis$value$assayID))
+                        choices = unique(filteredStdCurveAnalysis$value$assayID),
+                        selected = unique(filteredStdCurveAnalysis$value$assayID))
     }else if(!is.null(SCSelectAssayID)){
       updatePickerInput(session, "SC_assay_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$assayID),
+                        choices = unique(filteredStdCurveAnalysis$value$assayID),
                         selected = SCSelectAssayID)
     }
-    if(length(unique(filteredqStdCurveAnalysis$value$resultRunID))==1){
+    if(length(unique(filteredStdCurveAnalysis$value$resultRunID))==1){
       updatePickerInput(session, "SC_run_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$resultRunID),
-                        selected = unique(filteredqStdCurveAnalysis$value$resultRunID))
+                        choices = unique(filteredStdCurveAnalysis$value$resultRunID),
+                        selected = unique(filteredStdCurveAnalysis$value$resultRunID))
     }else if(!is.null(SCSelectRunID)){
       updatePickerInput(session, "SC_run_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$resultRunID),
+                        choices = unique(filteredStdCurveAnalysis$value$resultRunID),
                         selected = SCSelectRunID)
     }
-    if(length(unique(filteredqStdCurveAnalysis$value$resultPlatform))==1){
+    if(length(unique(filteredStdCurveAnalysis$value$resultPlatform))==1){
       updatePickerInput(session, "SC_platform_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$resultPlatform),
-                        selected = unique(filteredqStdCurveAnalysis$value$resultPlatform))
+                        choices = unique(filteredStdCurveAnalysis$value$resultPlatform),
+                        selected = unique(filteredStdCurveAnalysis$value$resultPlatform))
     }else if(!is.null(SCSelectPlatformID )){
       updatePickerInput(session, "SC_platform_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$resultPlatform),
+                        choices = unique(filteredStdCurveAnalysis$value$resultPlatform),
                         selected = SCSelectPlatformID )
     }
-    if(length(unique(filteredqStdCurveAnalysis$value$resultMachineID))==1){
+    if(length(unique(filteredStdCurveAnalysis$value$resultMachineID))==1){
       updatePickerInput(session, "SC_machine_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$resultMachineID),
-                        selected = unique(filteredqStdCurveAnalysis$value$resultMachineID))
+                        choices = unique(filteredStdCurveAnalysis$value$resultMachineID),
+                        selected = unique(filteredStdCurveAnalysis$value$resultMachineID))
     }else if(!is.null(SCSelectMachineID)){
       updatePickerInput(session, "SC_machine_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$resultMachineID),
+                        choices = unique(filteredStdCurveAnalysis$value$resultMachineID),
                         selected = SCSelectMachineID)
     }
-    if(length(unique(filteredqStdCurveAnalysis$value$resultStdCurveID))==1){
+    if(length(unique(filteredStdCurveAnalysis$value$resultStdCurveID))==1){
       updatePickerInput(session, "SC_curve_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$resultStdCurveID),
-                        selected = unique(filteredqStdCurveAnalysis$value$resultStdCurveID))
+                        choices = unique(filteredStdCurveAnalysis$value$resultStdCurveID),
+                        selected = unique(filteredStdCurveAnalysis$value$resultStdCurveID))
     }else if(!is.null(SCSelectCurveID )){
       updatePickerInput(session, "SC_curve_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$resultStdCurveID),
+                        choices = unique(filteredStdCurveAnalysis$value$resultStdCurveID),
                         selected = SCSelectCurveID )
     }
-    if(length(unique(filteredqStdCurveAnalysis$value$resultReactID))==1){
-      updatePickerInput(session, "SC_react_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$resultReactID),
-                        selected = unique(filteredqStdCurveAnalysis$value$resultReactID))
-    }else if(!is.null(SCSelectReactID )){
-      updatePickerInput(session, "SC_react_input",
-                        choices = unique(filteredqStdCurveAnalysis$value$resultReactID),
-                        selected = SCSelectReactID )
-    }
+
+    if(nrow(unique(filteredStdCurveAnalysis$value[,c("projectID", "assayID", "resultRunID", "resultPlatform", "resultMachineID", "resultStdCurveID")]))==1){
+
+print("SC_Update - 5")
+
+############################### Now the mdmapr values ##########################
+
+      #Clear the plot before resetting
+      clearStandardCurve_plot()
 
 
 
-    #BEGIN THE PLOTTING
 
-    filteredqStdCurveAnalysisEndUpdate <<-filteredqStdCurveAnalysis$value
+      output$standardCurve_plot <- plotly::renderPlotly({
 
-    if(nrow(unique(filteredqStdCurveAnalysis$value[,c("projectID", "assayID", "resultRunID", "resultPlatform", "resultMachineID", "resultStdCurveID")]))==1){
+print("standardCurve_plot - 1 ")
 
-      print("In the populate the figure section")
-      userdata <- data.frame(Cq = filteredqStdCurveAnalysis$value$resultUserProvCq, log_concentration = filteredqStdCurveAnalysisEndUpdate$resultTemplateConcInCopy)
-      mdmaprdata <- data.frame(Cq = filteredqStdCurveAnalysis$value$mdmaprCq, log_concentration = filteredqStdCurveAnalysisEndUpdate$resultTemplateConcInCopy)
+      # threshold$value #LOQ value
+      # detectRate$value #LOD value
 
-      if(input$mdmapr){
-        clean <- mdmaprdata[mdmaprdata$log_concentration > 0, ]
-        clean$log_concentration <- log10(clean$log_concentration)
-        clean <- clean[!is.na(clean$Cq), ]
-        clean <- mdmaprdata$clean
+        #Get the total number of cycles used for the standard curve first select only cycle columns
+        cycles <- filteredStdCurveAnalysis$value[,grep("Cycle", names(filteredStdCurveAnalysis$value), value = TRUE)]
+        #Remove columns with only NA values
+        cycles <- cycles[,colSums(is.na(cycles))<nrow(cycles)]
+        #count the number of columns to obtain the number of cycles
+        cycles <- ncol(cycles)
+
+        print("standardCurve_plot - 8")
+
+        if ("mdmaprSC" %in% input$groupsSC) {
+
+          # Getting the LOD and LOQ for the standard curves for mdmapr values
+          submissionData<-filteredStdCurveAnalysis$value[, base::c("built_unique_ID", "mdmaprCq", "resultTemplateConcInCopy")]
+
+          #Call the calculate_SC_LOD_LOQ function using the subset data.
+          formatted_metadata_SC_Calc_loop_curve<-calculate_SC_LOD_LOQ(submissionData, threshold$value, detectRate$value, cycles)
+
+          #update the names of the column for the submitted data. The returned values are
+          # column 2 - equation,3 - Rsq, 4 - LOD, 5 - LOQ
+          names(formatted_metadata_SC_Calc_loop_curve)[2] <- "mdmaprStdCurveLineEq"
+          names(formatted_metadata_SC_Calc_loop_curve)[3] <- "mdmaprStdCurveEfficiency"
+          names(formatted_metadata_SC_Calc_loop_curve)[4] <- "mdmaprStdCurveRSq"
+          names(formatted_metadata_SC_Calc_loop_curve)[5] <- paste0("mdmaprStdCurveLOD",(detectRate$value*100))
+          names(formatted_metadata_SC_Calc_loop_curve)[6] <- paste0("mdmaprStdCurveLOQ",(threshold$value*100))
+
+          # Suppress warnings during conversion and filtering
+          mdmaprdata <- data.frame(resultReactID = filteredStdCurveAnalysis$value$resultReactID, Cq = filteredStdCurveAnalysis$value$mdmaprCq, log_concentration = filteredStdCurveAnalysis$value$resultTemplateConcInCopy)
+          mdmaprdata <- mdmaprdata[!is.na(suppressWarnings(as.numeric(as.character(mdmaprdata$Cq)))), ,drop=FALSE]
+          mdmaprdata <- mdmaprdata[!is.na(suppressWarnings(as.numeric(as.character(mdmaprdata$log_concentration)))), ,drop=FALSE]
+          clean <- mdmaprdata[mdmaprdata$log_concentration > 0, ]
+          clean <- clean[!(clean$resultReactID %in% input$SC_react_input), , drop=FALSE]
+          LOD <- unique(formatted_metadata_SC_Calc_loop_curve[5])
+          LOQ <- unique(formatted_metadata_SC_Calc_loop_curve[6])
+          plottitle <- "MDMAPR"
+
+        }else if ("resultUserProvSC" %in% input$groupsSC) {
+
+          # Getting the LOD and LOQ for user values
+          submissionData<-filteredStdCurveAnalysis$value[, base::c("built_unique_ID", "resultUserProvCq", "resultTemplateConcInCopy")]
+
+          #Call the calculate_SC_LOD_LOQ function using the subset data.
+          formatted_metadata_SC_Calc_loop_curve<-calculate_SC_LOD_LOQ(submissionData, threshold$value, detectRate$value, cycles)
+
+          #update the names of the column for the submitted data. The returned values are
+          # column 2 - equation,3 - Rsq, 4 - LOD, 5 - LOQ
+          names(formatted_metadata_SC_Calc_loop_curve)[2] <- "userStdCurveLineEq"
+          names(formatted_metadata_SC_Calc_loop_curve)[3] <- "userStdCurveEfficiency"
+          names(formatted_metadata_SC_Calc_loop_curve)[4] <- "userStdCurveRSq"
+          names(formatted_metadata_SC_Calc_loop_curve)[5] <- paste0("userStdCurveLOD",(detectRate$value*100))
+          names(formatted_metadata_SC_Calc_loop_curve)[6] <- paste0("userStdCurveLOQ",(threshold$value*100))
+
+          # Suppress warnings during conversion and filtering
+          userdata <- data.frame(resultReactID = filteredStdCurveAnalysis$value$resultReactID, Cq = filteredStdCurveAnalysis$value$resultUserProvCq, log_concentration = filteredStdCurveAnalysis$value$resultTemplateConcInCopy)
+          userdata <- userdata[!is.na(suppressWarnings(as.numeric(as.character(userdata$Cq)))), ,drop=FALSE]
+          userdata <- userdata[!is.na(suppressWarnings(as.numeric(as.character(userdata$log_concentration)))), ,drop=FALSE]
+          clean <- userdata[userdata$log_concentration > 0, ]
+          clean <- clean[!(clean$resultReactID %in% input$SC_react_input), , drop=FALSE]
+          LOD <- unique(formatted_metadata_SC_Calc_loop_curve[5])
+          LOQ <- unique(formatted_metadata_SC_Calc_loop_curve[6])
+          plottitle <- "User"
+        }
+
+        clean$log_concentration <- as.numeric(log10(clean$log_concentration))
         cleanfit <- lm(Cq ~ log_concentration, data = clean)
-        clean$predicted_Cq <- predict(cleanfit, newdata = clean)
-        clean$residual <- clean$Cq - clean$predicted_Cq
-        LOD<-filteredqStdCurveAnalysis$userStdCurveLOD95
-        LOQ<-filteredqStdCurveAnalysis$userStdCurveLOQ35
-        plottitle <- "MDMAPR"
-      }
-      if(input$resultUserProv){
-        clean <- userdata[userdata$log_concentration > 0, ]
-        clean$log_concentration <- log10(clean$log_concentration)
-        clean <- clean[!is.na(clean$Cq), ]
-        clean <- userdata$clean
-        userfit <- lm(Cq ~ log_concentration, data = clean)
-        clean$predicted_Cq <- predict(userfit, newdata = clean)
-        clean$residual <- clean$Cq - clean$predicted_Cq
-        LOD<-filteredqStdCurveAnalysis$resultUserProvLOD
-        LOQ<-filteredqStdCurveAnalysis$resultUserProvLOQ
-        plottitle <- "User"
-      }
+        clean$Fitted <- as.numeric(fitted(cleanfit))
+        clean$residual <- as.numeric(clean$Cq) - as.numeric(clean$Fitted)
+        clean$Cq <- as.numeric(clean$Cq)
 
-      output$plot_output <- renderUI({
-          userClean <- clean$userClean
-          userfit <- lm(Cq ~ log_concentration, data = userClean)
-          userClean$predicted_Cq <- predict(userfit, newdata = userClean)
-          userClean$residual <- userClean$Cq - userClean$predicted_Cq
+        #get the points for the line of best fit
+        FitLineMin <- clean[which.min(clean$log_concentration), ,drop=FALSE]
+        FitLineMax <- clean[which.max(clean$log_concentration), ,drop=FALSE]
 
-          p_user <- ggplot(userClean, aes(x = log_concentration, y = Cq, color = residual)) +
-            geom_point() +
-            geom_smooth(method = "lm", formula = y ~ x, se = FALSE, color = "lightblue") +
-            scale_color_gradientn(colors = color_palette) +
-            labs(title = paste0(plottitle, "Source Data"),
-                 x = "Log Concentration",
-                 y = "Cq Values",
-                 color = "Residuals") +
-            theme_minimal()
+        x1<-FitLineMin$log_concentration
+        x2<-FitLineMax$log_concentration
+        y1<-FitLineMin$Fitted
+        y2<-FitLineMax$Fitted
+
+        # Create a plotly plot with customized hover text
+        p <- plotly::plot_ly(
+          data = clean,
+          x = ~log_concentration,
+          y = ~Cq,
+          color = ~residual,
+          type = 'scatter',
+          mode = 'markers', marker = list(symbol = 'circle',size = 8),
+          text = ~paste0("React:",resultReactID, "<br>Cq:", Cq, ",<br>LogConc:", round(log_concentration, 2)),  # Add resultReactID to hover text
+          hoverinfo = 'text',     # Show only the custom hover text
+          marker = list(size = 6)
+        ) %>%
+          plotly::add_trace(
+            x = c(x1,x2),
+            y = c(y1,y2),
+            mode = 'markers+lines',  # Ensure that only lines are plotted
+            name = "Fitted Line",
+            color = c(0,0),
+            line = list(color = 0), # Set the line color
+            marker = list(size = 1),
+            text = paste0("Fitted Line"), # Set hover text for the line
+            hoverinfo = 'text',            # Display custom hover text
+            showlegend = FALSE # Ensure that the legend is shown or adjusted as needed
+          ) %>%
+          plotly::layout(
+            title = paste0(plottitle, " Source Data<br>", unique(formatted_metadata_SC_Calc_loop_curve[2]), "<br>Rsq:", unique(formatted_metadata_SC_Calc_loop_curve[4]), " - Eff:", round(unique(formatted_metadata_SC_Calc_loop_curve[3]), 2)),
+            xaxis = list(title = "Log Concentration"),
+            yaxis = list(title = "Cq Values"),
+            coloraxis = list(
+              colorbar = list(
+                title = NULL  # Remove color gradient title
+              )
+            )
+          ) %>%
+          plotly::config(displayModeBar = FALSE) # Optionally hide the mode bar
+
+        print("standardCurve_plot - End - 1")
+
+        SCRemoveValues$value <- filteredStdCurveAnalysis$value[filteredStdCurveAnalysis$value$resultReactID %in% input$SC_react_input,, drop=FALSE]
+        SCKeepValues$value <- filteredStdCurveAnalysis$value[!filteredStdCurveAnalysis$value$resultReactID %in% input$SC_react_input,, drop=FALSE]
+
+        print("standardCurve_plot - End")
+
+        p
       })
-#
-# SCLogData <- log(filteredqStdCurveAnalysisEndUpdate$resultTemplateConcInCopy)
-# userdata <- data.frame(Cq = filteredqStdCurveAnalysisEndUpdate$resultUserProvCq, log_concentration = SCLogData)
-# mdmaprdata <- data.frame(Cq = filteredqStdCurveAnalysisEndUpdate$mdmaprCq, log_concentration = SCLogData)
-#
-# print("Populate figure - 1")
-#
-#       SCLogData <- log(filteredqStdCurveAnalysis$value$resultTemplateConcInCopy)
-#       userdata <- data.frame(Cq = filteredqStdCurveAnalysis$value$resultUserProvCq, log_concentration = SCLogData)
-#       mdmaprdata <- data.frame(Cq = filteredqStdCurveAnalysis$value$mdmaprCq, log_concentration = SCLogData)
-#
-# print("Populate figure - 2")
-#
-#       # Remove rows with non-numeric or infinite values in the log_concentration column
-#       userClean <- suppressWarnings(userdata[!is.na(as.numeric(userdata$log_concentration)) & is.finite(as.numeric(userdata$log_concentration)), ,drop = FALSE])
-#       userClean <- suppressWarnings(userClean[!is.na(as.numeric(userClean$Cq)) & is.finite(as.numeric(userClean$Cq)), ,drop = FALSE])
-#       mdmaprClean <- suppressWarnings(mdmaprdata[!is.na(as.numeric(mdmaprdata$log_concentration)) & is.finite(as.numeric(mdmaprdata$log_concentration)), ,drop = FALSE])
-#       mdmaprClean <- suppressWarnings(mdmaprClean[!is.na(as.numeric(mdmaprClean$Cq)) & is.finite(as.numeric(mdmaprClean$Cq)), ,drop = FALSE])
-#
-# print("Populate figure - 3")
-#
-#       # Perform linear regression
-#       userfit <- lm(as.numeric(Cq) ~ as.numeric(log_concentration), data = userClean)
-#       mdmaprfit <- lm(as.numeric(Cq) ~ as.numeric(log_concentration), data = mdmaprClean)
-#
-# print("Populate figure - 4")
-#
-#       # Predict Cq values and calculate residuals
-#       userClean$predicted_Cq <- predict(userfit, newdata = userClean)
-#       userClean$residual <- userClean$Cq - userClean$predicted_Cq
-#
-# print("Populate figure - 5")
-#
-#       # Normalize residuals for color mapping
-#       usermin_residual <- min(userClean$residual)
-#       usermax_residual <- max(userClean$residual)
-#       userClean$normalized_residual <- (userClean$residual - usermin_residual) / (usermax_residual - usermin_residual)
-#
-# print("Populate figure - 6")
-#
-#       # Predict Cq values and calculate residuals
-#       mdmaprClean$predicted_Cq <- predict(mdmaprfit, newdata = mdmaprClean)
-#       mdmaprClean$residual <- mdmaprClean$Cq - mdmaprClean$predicted_Cq
-#
-# print("Populate figure - 7")
-#
-#       # Normalize residuals for color mapping
-#       mdmaprmin_residual <- min(mdmaprClean$residual)
-#       mdmaprmax_residual <- max(mdmaprClean$residual)
-#       mdmaprClean$normalized_residual <- (mdmaprClean$residual - mdmaprmin_residual) / (mdmaprmax_residual - mdmaprmin_residual)
-#
-# print("Populate figure - 8")
-#
-#       #the LOD and LOQ
-#       userLOD_Cq <- resultUserProvLOQ
-#       userLOQ_Cq <- resultUserProvLOD
-#       mdmaprLOD_Cq <- mdmaprStdCurveLOD95
-#       mdmaprLOQ_Cq <- mdmaprStdCurveLOQ35
-#
-# print("Populate figure - 9")
-
-      # Define a color palette
-      color_palette <- colorRampPalette(brewer.pal(9, "RdYlBu"))(100)
-#
-#       output$standardCurve_plot <- renderPlotly({
-#         #
-#         # # Create a ggplot with raw residuals
-#         # p <- ggplot(data, aes(x = log_concentration, y = Cq)) +
-#         #   geom_point(aes(color = residual)) +
-#         #   scale_color_gradientn(colors = color_palette) +  # Using a more sophisticated color gradient
-#         #   geom_line(data = average_residuals, aes(x = log_concentration, y = avg_residual), color = "black", linetype = "dashed") +
-#         #   geom_smooth(method = "lm", se = FALSE, color = "blue") +
-#         #   geom_vline(xintercept = log10(LOD_Cq), linetype = "dashed", color = "red") +
-#         #   geom_vline(xintercept = log10(LOQ_Cq), linetype = "dashed", color = "green") +
-#         #   labs(title = "Standard Curve with LOD and LOQ\n(Raw Residuals Color Scheme)",
-#         #        x = "Log Concentration",
-#         #        y = "Cq Values",
-#         #        color = "Residuals") +
-#         #   theme_minimal()
-#         #
-#         # # Convert to interactive plotly plot
-#         # ggplotly(p, tooltip = c("x", "y", "color"))
-#
-#       })
-
-
-      #
-      # print("Here in the SC_plot_data section her is SC_plot_data$standardConc - 1")
-      # print(SC_plot_data$standardConc)
-      #
-      #           #Change user provided Cq to numeric value to numeric
-      # #          SC_plot_data$systemCalculatedCqValue <- as.numeric(SC_plot_data$mdmaprCq)
-      #           SC_plot_data$systemCalculatedCqValue <- as.numeric(as.data.frame(SC_filtered())$mdmaprCq)
-      # print("SC_Plot - 3")
-      # #          SC_plot_data$systemCalculatedLOQ<- as.numeric(SC_plot_data$mdmaprLOD)
-      #           SC_plot_data$systemCalculatedLOQ<- as.numeric(as.data.frame(SC_filtered())$mdmaprLOQ)
-      # print("SC_Plot - 4")
-      # #          SC_plot_data$systemCalculatedLOD<- as.numeric(SC_plot_data$systemCalculatedLOD)
-      #           SC_plot_data$systemCalculatedLOD<- as.numeric(as.data.frame(SC_filtered())$mdmaprLOD)
-      # print("SC_Plot - 5")
-      #
-      #           #Add column with residual values to data set
-      #           regression_line <- lm(as.numeric(systemCalculatedCqValue) ~ as.numeric(standardConc), SC_plot_data)
-      #           SC_plot_data$Residual <- abs(residuals(regression_line))
-      #
-      #
-      #
-      #
-      #
-
-
-
-
-      # The selected data
-
-
-    #
-    #   absorbance <- filteredqPCRDataOverview$value[,grep("Cycle", names(filteredqPCRDataOverview$value), value = TRUE)]
-    #
-    #   cycles <- 1:length(absorbance)
-    #
-    #   # First set of thresholds
-    #   mdmapr_Thres <- as.numeric(as.character(filteredqPCRDataOverview$value$mdmaprThres[1]))
-    #   mdmapr_LOD <- as.numeric(as.character(solve_for_x(filteredqPCRDataOverview$value$mdmaprStdCurveLineEq[1],filteredqPCRDataOverview$value$mdmaprStdCurveLOD95[1])))
-    #   mdmapr_LOQ <- as.numeric(as.character(solve_for_x(filteredqPCRDataOverview$value$mdmaprStdCurveLineEq[1],filteredqPCRDataOverview$value$mdmaprStdCurveLOQ35[1])))
-    #   mdmapr_Cq <- as.numeric(as.character(filteredqPCRDataOverview$value$mdmaprCq[1]))
-    #   mdmapr_LogLinear <- as.character(filteredqPCRDataOverview$value$mdmaprLogLinear[1])
-    #   mdmapr_LogLinear <- as.numeric(unlist(strsplit(mdmapr_LogLinear, ":")))
-    #
-    #   # Second set of thresholds
-    #   resultUserProv_Thres <- as.numeric(as.character(filteredqPCRDataOverview$value$resultUserProvThres[1]))
-    #   resultUserProv_LOD <- as.numeric(as.character(solve_for_x(filteredqPCRDataOverview$value$userStdCurveLineEq[1],filteredqPCRDataOverview$value$resultUserProvLOD[1])))
-    #   resultUserProv_LOQ <- as.numeric(as.character(solve_for_x(filteredqPCRDataOverview$value$userStdCurveLineEq[1],filteredqPCRDataOverview$value$resultUserProvLOQ[1])))
-    #   resultUserProv_Cq <- as.numeric(as.character(filteredqPCRDataOverview$value$resultUserProvCq[1]))
-    #   resultUserProv_LogLinear <- as.character(filteredqPCRDataOverview$value$userLogLinear[1])
-    #   resultUserProv_LogLinear <- as.numeric(unlist(strsplit(resultUserProv_LogLinear, ":")))
-    #
-    #   # Determine the last non-NA value index
-    #   last_non_na_index <- which.max(is.na(absorbance)) - 1
-    #   if (last_non_na_index == 0) last_non_na_index <- length(absorbance)  # handle case with no NAs
-    #
-    #   # Filter data up to the first NA
-    #   filtered_absorbance <- as.numeric(as.character(absorbance[1:last_non_na_index]))
-    #   filtered_cycles <- as.numeric(as.character(cycles[1:last_non_na_index]))
-    #
-    #   # Maximum value for y-axis
-    #   y_max <- max(filtered_absorbance, na.rm = TRUE)
-    #
-    #   # Output plot
-    #   output$qPCROverviewPlot <- plotly::renderPlotly({
-    #     # Initialize plot
-    #     p <- plotly::plot_ly()
-    #
-    #     # Add raw absorbance data
-    #     p <- p %>%
-    #       plotly::add_trace(x = filtered_cycles, y = filtered_absorbance, type = 'scatter', mode = 'markers',
-    #                         marker = list(color = 'black', size = 4),
-    #                         name = "Raw Absorbance")
-    #
-    #     # Add mdmapr data if checkbox is checked
-    #     if ("mdmapr" %in% input$groups) {
-    #       if ("thres" %in% input$elements) {
-    #         p <- p %>%
-    #           plotly::add_trace(x = c(min(filtered_cycles), max(filtered_cycles)), y = rep(mdmapr_Thres, 2),
-    #                             type = 'scatter', mode = 'lines', line = list(dash = 'dash', color = 'blue'),
-    #                             name = 'mdmapr Threshold')
-    #       }
-    #       if ("lod" %in% input$elements) {
-    #         p <- p %>%
-    #           plotly::add_trace(x = c(rep(mdmapr_LOD, length(filtered_cycles))), y = seq(0, floor(y_max), by = floor(y_max) / (length(filtered_cycles)-1)),
-    #                             type = 'scatter', mode = 'markers', marker = list(symbol = 'circle', color = 'blue', size = 4),
-    #                             name = 'mdmapr LOD')
-    #       }
-    #       if ("loq" %in% input$elements) {
-    #         p <- p %>%
-    #           plotly::add_trace(x = c(rep(mdmapr_LOQ, length(filtered_cycles))), y = seq(0, floor(y_max), by = floor(y_max) / (length(filtered_cycles)-1)),
-    #                             type = 'scatter', mode = 'markers', marker = list(symbol = 'triangle-up', color = 'blue', size = 4),
-    #                             name = 'mdmapr LOQ')
-    #       }
-    #       if ("cq" %in% input$elements) {
-    #         p <- p %>%
-    #           plotly::add_trace(x = c(rep(mdmapr_Cq, length(filtered_cycles))), y = seq(0, floor(y_max), by = floor(y_max) / (length(filtered_cycles)-1)),
-    #                             type = 'scatter', mode = 'markers', marker = list(symbol = 'square', color = 'blue', size = 4),
-    #                             name = 'mdmapr Cq')
-    #       }
-    #       if ("loglinear" %in% input$elements) {
-    #         p <- p %>%
-    #           plotly::add_trace(x = c(as.numeric(mdmapr_LogLinear[1]), as.numeric(mdmapr_LogLinear[1]), as.numeric(mdmapr_LogLinear[2]), as.numeric(mdmapr_LogLinear[2])),
-    #                             y = c(0, y_max, y_max, 0),
-    #                             type = 'scatter', mode = 'none', fill = 'tozeroy', fillcolor = 'rgba(173, 216, 230, 0.2)',  # light blue
-    #                             name = 'mdmapr Log Linear Area')
-    #       }
-    #     }
-    #
-    #     # Add resultUserProv data if checkbox is checked
-    #     if ("resultUserProv" %in% input$groups) {
-    #       if ("thres" %in% input$elements) {
-    #         p <- p %>%
-    #           plotly::add_trace(x = c(min(filtered_cycles), max(filtered_cycles)), y = rep(resultUserProv_Thres, 2),
-    #                             type = 'scatter', mode = 'lines', line = list(dash = 'dash', color = 'red'),
-    #                             name = 'resultUserProv Threshold')
-    #       }
-    #       if ("lod" %in% input$elements) {
-    #         p <- p %>%
-    #           plotly::add_trace(x = c(rep(resultUserProv_LOD, length(filtered_cycles))), y = seq(0, floor(y_max), by = floor(y_max) / (length(filtered_cycles)-1)),
-    #                             type = 'scatter', mode = 'markers', marker = list(symbol = 'circle', color = 'red', size = 4),
-    #                             name = 'resultUserProv LOD')
-    #       }
-    #       if ("loq" %in% input$elements) {
-    #         p <- p %>%
-    #           plotly::add_trace(x = c(rep(resultUserProv_LOQ, length(filtered_cycles))), y = seq(0, floor(y_max), by = floor(y_max) / (length(filtered_cycles)-1)),
-    #                             type = 'scatter', mode = 'markers', marker = list(symbol = 'triangle-up', color = 'red', size = 4),
-    #                             name = 'resultUserProv LOQ')
-    #       }
-    #       if ("cq" %in% input$elements) {
-    #         p <- p %>%
-    #           plotly::add_trace(x = c(rep(resultUserProv_Cq, length(filtered_cycles))), y = seq(0, floor(y_max), by = floor(y_max) / (length(filtered_cycles)-1)),
-    #                             type = 'scatter', mode = 'markers', marker = list(symbol = 'square', color = 'red', size = 4),
-    #                             name = 'resultUserProv Cq')
-    #       }
-    #       if ("loglinear" %in% input$elements) {
-    #         p <- p %>%
-    #           plotly::add_trace(x = c(as.numeric(resultUserProv_LogLinear[1]), as.numeric(resultUserProv_LogLinear[1]), as.numeric(resultUserProv_LogLinear[2]), as.numeric(resultUserProv_LogLinear[2])),
-    #                             y = c(0, y_max, y_max, 0),
-    #                             type = 'scatter', mode = 'none', fill = 'tozeroy', fillcolor = 'rgba(255, 182, 193, 0.2)',  # light red
-    #                             name = 'resultUserProv Log Linear Area')
-    #       }
-    #     }
-    #
-    #     # Layout configuration
-    #     p <- p %>%
-    #       plotly::layout(title = "qPCR Overview Plot",
-    #                      xaxis = list(title = "Cycle Number", range = c(1, max(filtered_cycles))),
-    #                      yaxis = list(title = "Absorbance", range = c(0, y_max)),
-    #                      showlegend = FALSE)  # Hide the legend as checkboxes now control visibility
-    #
-    #     p
-    #   })
-    #
-    #
     }
-
-
-
-
-
-
-
-
-
-
-
   },ignoreInit = TRUE)
 
 
+  ############################ Standard Curve Remove Selected ##################
+  shiny::observeEvent(input$SC_Remove, {
+    shiny::showModal(shiny::modalDialog(
+      title = "Data Removal",
+      "By selecting the continue button below the selected data points will be removed from the loaded data and will trigger reanalysis of the submited dataset.",
+      footer = shiny::tagList(
+        shiny::actionButton("SCRemoveConfirm", "Confirm Removal"),
+        shiny::actionButton("SCRemoveCancel", "Cancel")
+      )
+    ))
+  })
+
+  shiny::observeEvent(input$SCRemoveConfirm, {
+
+    removeModal()
+
+    shiny::showModal(shiny::modalDialog(
+      title = "Processing, please stand by...",
+      footer=""
+
+    ))
 
 
+    SCRemoveValuesSCRemoveGLOBAL <<- SCRemoveValues$value
+    SCKeepValuesSCRemoveGLOBAL <<- SCKeepValues$value
+
+    ############# First remove the values to remove ########################
+    # Find rows in df1 that are also in df2
+    matched_rows <- merge(totalMDMAPRDataFile$value, SCRemoveValues$value)
+
+    # Identify rows in df1 that are not in the matched rows
+    rows_to_remove <- apply(totalMDMAPRDataFile$value, 1, function(row) any(apply(matched_rows, 1, function(matched_row) all(row == matched_row))))
+
+    # Filter df1 to remove the rows that are in df2
+    totalMDMAPRDataFile$value <- totalMDMAPRDataFile$value[!rows_to_remove, ]
+
+    #### Then remove the values to keep as I will add the updated rows later ###
+
+    # Find rows in df1 that are also in df2
+    matched_rows <- merge(totalMDMAPRDataFile$value, SCKeepValues$value)
+
+    # Identify rows in df1 that are not in the matched rows
+    rows_to_remove <- apply(totalMDMAPRDataFile$value, 1, function(row) any(apply(matched_rows, 1, function(matched_row) all(row == matched_row))))
+
+    # Filter df1 to remove the rows that are in df2
+    totalMDMAPRDataFile$value <- totalMDMAPRDataFile$value[!rows_to_remove, ]
 
 
+    ##### Update the values to keep ##########################################
+
+    #Get the total number of cycles used for the standard curve first select only cycle columns
+    cycles <- SCKeepValues$value[,grep("Cycle", names(SCKeepValues$value), value = TRUE)]
+    #Remove columns with only NA values
+    cycles <- cycles[,colSums(is.na(cycles))<nrow(cycles)]
+    #count the number of columns to obtain the number of cycles
+    cycles <- ncol(cycles)
+
+    # Getting the LOD and LOQ for user values
+    submissionData<-SCKeepValues$value[, base::c("built_unique_ID", "resultUserProvCq", "resultTemplateConcInCopy")]
+
+    #Call the calculate_SC_LOD_LOQ function using the subset data.
+    formatted_metadata_SC_Calc_loop_curve<-calculate_SC_LOD_LOQ(submissionData, threshold$value, detectRate$value, cycles)
+
+    #update the names of the column for the submitted data. The returned values are
+    # column 2 - equation,3 - Rsq, 4 - LOD, 5 - LOQ
+    names(formatted_metadata_SC_Calc_loop_curve)[2] <- "userStdCurveLineEq"
+    names(formatted_metadata_SC_Calc_loop_curve)[3] <- "userStdCurveEfficiency"
+    names(formatted_metadata_SC_Calc_loop_curve)[4] <- "userStdCurveRSq"
+    names(formatted_metadata_SC_Calc_loop_curve)[5] <- paste0("userStdCurveLOD",(detectRate$value*100))
+    names(formatted_metadata_SC_Calc_loop_curve)[6] <- paste0("userStdCurveLOQ",(threshold$value*100))
+
+    #Add the userStdCurveLineEq, userStdCurveEfficiency, userStdCurveRSq, userStdCurveLOD95, userStdCurveLOQ35" values to the totalMDMAPRDataFile
+    SCKeepValues$value <- replace_columns(SCKeepValues$value, formatted_metadata_SC_Calc_loop_curve, base::c("userStdCurveLineEq", "userStdCurveEfficiency", "userStdCurveRSq", "userStdCurveLOD95", "userStdCurveLOQ35"))
+
+    ######################### Now the mdmapr values ######################
+
+    # Getting the LOD and LOQ for the standard curves for mdmapr values
+    submissionData<-SCKeepValues$value[, base::c("built_unique_ID", "mdmaprCq", "resultTemplateConcInCopy")]
+
+    #Call the calculate_SC_LOD_LOQ function using the subset data.
+    formatted_metadata_SC_Calc_loop_curve<-calculate_SC_LOD_LOQ(submissionData, threshold$value, detectRate$value, cycles)
+
+    #update the names of the column for the submitted data. The returned values are
+    # column 2 - equation,3 - Rsq, 4 - LOD, 5 - LOQ
+    names(formatted_metadata_SC_Calc_loop_curve)[2] <- "mdmaprStdCurveLineEq"
+    names(formatted_metadata_SC_Calc_loop_curve)[3] <- "mdmaprStdCurveEfficiency"
+    names(formatted_metadata_SC_Calc_loop_curve)[4] <- "mdmaprStdCurveRSq"
+    names(formatted_metadata_SC_Calc_loop_curve)[5] <- paste0("mdmaprStdCurveLOD",(detectRate$value*100))
+    names(formatted_metadata_SC_Calc_loop_curve)[6] <- paste0("mdmaprStdCurveLOQ",(threshold$value*100))
+
+    #Add the mdmaprStdCurveLineEq, mdmaprStdCurveEfficiency, mdmaprStdCurveRSq, mdmaprStdCurveLOD95, mdmaprStdCurveLOQ35" values to the totalMDMAPRDataFile
+    SCKeepValues$value <- replace_columns(SCKeepValues$value, formatted_metadata_SC_Calc_loop_curve, base::c("mdmaprStdCurveLineEq", "mdmaprStdCurveEfficiency", "mdmaprStdCurveRSq", "mdmaprStdCurveLOD95", "mdmaprStdCurveLOQ35"))
+
+    #Finally after removing the values to keep add the updated values back onto the totalMDMAPRDataFile$value
+    totalMDMAPRDataFile$value <- rbind(totalMDMAPRDataFile$value, SCKeepValues$value)
+    totalMDMAPRDataFileSCReplace <<- totalMDMAPRDataFile$value
+
+    #Using the filtered options already set and running the function with the new
+    # contents of the totalMDMAPRDataFile
+    filterOptionsUpdate()
+
+    #Now taking the updated filtered data sheet and making it equal to the
+    #qPCR Overview datasheet so that section is ready
+    filteredqPCRDataOverview$value <- filtered$value
+    #Set Standard Curve Analysis datasheet so that section is ready
+    filteredStdCurveAnalysis$value <- filtered$value
+    # Remove any unk data as this needs to be opt or ntc data for standard curves
+    filteredStdCurveAnalysis$value <- filteredStdCurveAnalysis$value[filteredStdCurveAnalysis$value$resultSampleType != "unkn",,drop=FALSE]
 
 
+    #Update the selections for the reaction names so none are selected
+    updatePickerInput(session, "SC_react_input",
+                      choices = unique(filteredStdCurveAnalysis$value$resultReactID),
+                      selected =  NULL)
+    #Clear the plot
+    output$standardCurve_plot <- NULL
+
+    removeModal()
+
+  })
+
+  shiny::observeEvent(input$SCRemoveCancel, {
+
+    removeModal()
+
+  })
 
 
-
-
-
-
-#
-# ################### Standard Curve Design page #################################
-#
-#
-# ################### Standard Curve File Validation #############################
-#
-#
-#
-# #First when the Standard Curve Analysis tab is clicked then...
-#
-# #  If the tab is clocked check the uploaded_data. if it is Initial then don't do anything,
-# # if it is anything else then check to see if there are records that are opt using...
-# #  as.data.frame(uploaded_data$value)[as.data.frame(uploaded_data$value)$resultSampleType == "opt", ]
-#
-# # if there are records that are opt then fill in the tables for the standard curve analysis
-#
-#
-#
-#
-#
-#
-#     #Place an observe here if the tab for the SC analysis is open
-#
-#     observe({
-
-# THIS input name changed to sidebarMenu
-#       if(input$tab_being_displayed == "stdCurve") {
-#
-#
-#
-#
-#
-#
-#
-#     print("Here SC - 1")
-#     #Update SC assay list
-#     SC_assay_input_list <- reactive({
-#       suppressWarnings(if(uploaded_data$value!="Initial"){
-#   print("In the SC_assay_input_list reactive value and here is what is returned...")
-#   print(unique(as.data.frame(uploaded_data$value)[as.data.frame(uploaded_data$value)$resultSampleType == "opt", "assayName"]))
-#         return(unique(as.data.frame(uploaded_data$value)[as.data.frame(uploaded_data$value)$resultSampleType == "opt", "assayName"]))
-#       }else{
-#   print("In the SC_assay_input_list else returning NULL")
-#         return(NULL)
-#       })
-#     })
-#
-#     observe({
-#       updatePickerInput(session, "SC_assay_input",
-#                         choices = SC_assay_input_list(),
-#                         selected = SC_assay_input_list() )
-#     })
-#     print("Here SC - 2")
-#     #Update SC assay list
-#     SC_machine_input_list <- reactive({
-#   print("In the SC_machine_input_list reactive value and here is what is returned...")
-#   print(unique(as.data.frame(uploaded_data$value)[as.data.frame(uploaded_data$value)$resultSampleType == "opt", "resultPlatform"]))
-#       suppressWarnings(if(uploaded_data$value!="Initial"){
-#         return(unique(as.data.frame(uploaded_data$value)[as.data.frame(uploaded_data$value)$resultSampleType == "opt", "resultPlatform"]))
-#       }else{
-#         return(NULL)
-#       })
-#     })
-#
-#     observe({
-#       updatePickerInput(session, "SC_machine_input",
-#                         choices = SC_machine_input_list(),
-#                         selected = SC_machine_input_list() )
-#     })
-#     print("Here SC - 3")
-#     #Update SC assay list
-#     SC_project_input_list <- reactive({
-#       suppressWarnings(if(uploaded_data$value!="Initial"){
-#         return(unique(as.data.frame(uploaded_data$value)[as.data.frame(uploaded_data$value)$resultSampleType == "opt", "projectID"]))
-#       }else{
-#         return(NULL)
-#       })
-#     })
-#
-#     observe({
-#       updatePickerInput(session, "SC_project_input",
-#                         choices = SC_project_input_list(),
-#                         selected = SC_project_input_list() )
-#     })
-#
-#
-#
-#     SC_well_list <- reactive({
-#   print("In the SC_well_list reactive value and here is what is returned...")
-#   print(unique(row.names(as.data.frame(uploaded_data$value)[as.data.frame(uploaded_data$value)$resultSampleType == "opt",])))
-#       suppressWarnings(if(uploaded_data$value!="Initial"){
-#         return(unique(row.names(as.data.frame(uploaded_data$value)[as.data.frame(uploaded_data$value)$resultSampleType == "opt",])))
-#       }else{
-#         return(NULL)
-#       })
-#     })
-#
-#     observe({updatePickerInput(session,"SC_wells",
-#                                choices = SC_well_list(),
-#                                selected = SC_well_list())})
-#
-#     SC_filtered <- reactive({
-#
-#       print("At the top of the SC_filtered reactive")
-#
-#       suppressWarnings(if (uploaded_data$value != "Initial") {
-#
-#         print("Here at top of SC_Filtered")
-#
-#         #Get the data from the initial upload which are standard curve data
-#         SC_data_final <- as.data.frame(uploaded_data$value)
-# #        SC_data_final <- SC_data_final[SC_data_final$resultSampleType == "opt",,drop=FALSE]
-# #        SC_data_final <- SC_data_final[,base::c("assayName", "assayID", "resultPlatform", "projectID",
-# #                        "resultReactID", "resultWellLoc", "resultTemplateConcInCopy", "resultUserProvThres", "resultUserProvCq", "mdmaprThres", "mdmaprCq") ,drop=FALSE]
-#         SC_data_finalGlobalA<<-SC_data_final
-#         print("SC_filtered reactive - 1")
-#         #Reduce the data by the assay name
-#         SC_data_final<-SC_data_final[SC_data_final$assayName %in% input$SC_assay_input,,drop=FALSE]
-#         SC_data_finalGlobalB<<-SC_data_final
-#         #Reduce the data by the assay name
-#         SC_data_final<-SC_data_final[SC_data_final$resultPlatform %in% input$SC_machine_input,,drop=FALSE]
-#         print("SC_filtered reactive - 2")
-#         SC_data_finalGlobalC<<-SC_data_final
-#         #Reduce the data by the assay name
-#         SC_data_final<-SC_data_final[SC_data_final$projectID %in% input$SC_project_input,,drop=FALSE]
-#         print("SC_filtered reactive - 3")
-#         SC_data_finalGlobalD<<-SC_data_final
-#         SC_data_final<-SC_data_final[row.names(SC_data_final) %in% input$SC_wells,,drop=FALSE]
-#         #SC_data_finalGlobalE<<-SC_data_final
-#
-#       }else{
-#
-#   print("here in the else fo the SC_Filtered")
-#    #      return("Initial")
-#         return(NULL)
-#       })#End of if else
-#
-#     })
-#
-#
-#   observe({
-#
-#THIS input name changed to sidebarMenu
-#     if(input$tab_being_displayed == "stdCurve"){
-#
-#       suppressWarnings(if (nrow(as.data.frame(SC_filtered())) >0) {
-#
-#         SC_table <- as.data.frame(SC_filtered())[as.data.frame(SC_filtered())$resultSampleType == "opt",,drop=FALSE]
-#         SC_table <- SC_table[,base::c("assayName", "assayID", "resultPlatform", "projectID",
-#                                 "resultReactID", "resultWellLoc", "resultTemplateConcInCopy", "resultUserProvThres", "resultUserProvCq", "mdmaprThres", "mdmaprCq") ,drop=FALSE]
-#
-#
-#         #Dynamic data table with SC data
-#         output$SC_overview_table <- DT::renderDT({
-#
-#           #The following line creates the data table using the filtered data but removing any columns that have no data
-#   #        datatable(as.data.frame(SC_filtered()),
-#   #        DT::datatable(as.data.frame(SC_filtered()),
-#           DT::datatable(SC_table,
-#                     options = list(pageLength = 50,
-#                                    scrollX = TRUE, scrollY = TRUE
-#                     ))
-#         })
-#       }
-#     )}#End of if filtered()
-#   })# end of the observe
-#
-#
-#
-#
-#       ################### Standard Curve Re-calibration based on wells selected ######
-#        observeEvent(input$std_recalib, isolate({
-#
-#          output$standardCurve_plot <- renderPlotly({
-#    #        req(())
-#            #filter data based on well selected
-#    #        SC_plot_data <- ()
-# #           SC_plot_data <- SC_plot_data[SC_plot_data$wellLocation==input$SC_wells, ]
-# #           SC_plot_data <- as.data.frame(SC_filtered())
-#
-#            #Remove control records
-# #           SC_plot_data <- control_records_to_remove(SC_plot_data)
-#
-#
-#
-#            # #Return popup message regarding uploaded standard curve fluorescence file.
-#            #
-#            # control_records_to_remove <- function(meta_data) {
-#            #   if (length(which(grepl("Y", toupper(meta_data$control)))) != 0)
-#            #   {return (meta_data[-base::c(which(grepl("Y", toupper(meta_data$control)))), ])}
-#            #
-#            #   else
-#            #   {return(meta_data)}
-#            # }
-#
-#
-#
-# SC_filtered_CalibrateGlobalA<<-SC_filtered()
-#
-#   print("At the beginning of the plotting here are the concentration data")
-#   print(as.data.frame(SC_filtered())$resultTemplateConcInCopy)
-#
-#           #Change standard concentration value to numeric and then take log value
-#           #SC_plot_data$standardConc <- as.numeric(SC_plot_data$standardConc)
-# #          SC_plot_data <- data.frame()
-# print("SC_Plot - 1")
-# print(as.numeric(as.data.frame(SC_filtered())$resultTemplateConcInCopy))
-# #          SC_plot_data$standardConc <- as.numeric(as.data.frame(SC_filtered())$resultTemplateConcInCopy)
-#           SC_plot_data <- data.frame(resultWellLoc=as.data.frame(SC_filtered())$resultWellLoc)
-#           SC_plot_data$standardConc <- as.numeric(as.data.frame(SC_filtered())$resultTemplateConcInCopy)
-# print("SC_Plot - 2")
-# SC_plot_dataGlobalA<<-SC_plot_data
-#
-#           SC_plot_data$standardConc <- log(SC_plot_data$standardConc)
-#
-# print("Here in the SC_plot_data section her is SC_plot_data$standardConc - 1")
-# print(SC_plot_data$standardConc)
-#
-#           #Change user provided Cq to numeric value to numeric
-# #          SC_plot_data$systemCalculatedCqValue <- as.numeric(SC_plot_data$mdmaprCq)
-#           SC_plot_data$systemCalculatedCqValue <- as.numeric(as.data.frame(SC_filtered())$mdmaprCq)
-# print("SC_Plot - 3")
-# #          SC_plot_data$systemCalculatedLOQ<- as.numeric(SC_plot_data$mdmaprLOD)
-#           SC_plot_data$systemCalculatedLOQ<- as.numeric(as.data.frame(SC_filtered())$mdmaprLOQ)
-# print("SC_Plot - 4")
-# #          SC_plot_data$systemCalculatedLOD<- as.numeric(SC_plot_data$systemCalculatedLOD)
-#           SC_plot_data$systemCalculatedLOD<- as.numeric(as.data.frame(SC_filtered())$mdmaprLOD)
-# print("SC_Plot - 5")
-#
-#           #Add column with residual values to data set
-#           regression_line <- lm(as.numeric(systemCalculatedCqValue) ~ as.numeric(standardConc), SC_plot_data)
-#           SC_plot_data$Residual <- abs(residuals(regression_line))
-#
-#           #Code to get R squared
-#           #Adapted from: https://stackoverflow.com/questions/7549694/add-regression-line-equation-and-r2-on-graph
-#           # Code to get equation of the line and R-squared
-#           # Adapted from: https://groups.google.com/forum/#!topic/ggplot2/1TgH-kG5XMA
-#
-#           lm_eq <- function(df){
-#
-#             model1 <- lm(systemCalculatedCqValue ~ standardConc, df, na.action=na.exclude)
-#
-#             b = format(unname(coef(model1)[1]), digits = 2)
-#
-#             mx = paste("(", format(unname(coef(model1)[2]), digits = 2), "x", ")",  sep = "")
-#
-#             r2 = format(summary(model1)$r.squared, digits = 3)
-#
-#             equation_of_line <- paste("y", " = ", mx, " + ", b, ",   ", "R-squared", " = ", r2,  sep = "")
-#
-#             return (equation_of_line)
-#
-#           }
-#
-#
-#
-#           print(
-#
-#             ggplotly(height = 700,
-#
-#                      ggplot(data = SC_plot_data, aes(x = standardConc,
-#                                                      y = systemCalculatedCqValue,
-#                                                      color = Residual)) +
-#
-#                        geom_point(size = 10, alpha = .3) +
-#
-#                        geom_smooth(method = "lm",
-#                                    se = FALSE,
-#                                    alpha = .15,
-#                                    color = 'black',
-#                                    formula = y ~ x) +
-#
-#                        geom_vline(xintercept = log(SC_plot_data$systemCalculatedLOD),
-#                                   color = "#ea5f94",
-#                                   linetype="dashed") +
-#                        #
-#                        geom_vline(xintercept = log(SC_plot_data$systemCalculatedLOQ),
-#                                   color = "#0178A1",
-#                                   linetype="dotted") +
-#
-#                        geom_text(aes(x= log(systemCalculatedLOD),
-#                                      label="LOD",
-#                                      y= mean(systemCalculatedCqValue)),
-#                                  colour="#ea5f94",
-#                                  angle=90,
-#                                  vjust = 1.2,
-#                                  size=5) +
-#
-#                        geom_text(aes(x= log(systemCalculatedLOQ),
-#                                      label="LOQ",
-#                                      y= mean(systemCalculatedCqValue)*1.2),
-#                                  colour="#0178A1",
-#                                  angle=90,
-#                                  vjust = 1.2,
-#                                  size=5) +
-#
-#                        geom_text(aes(label=resultWellLoc)) +
-#
-#
-#                        xlab("log DNA Copy Number") +
-#
-#                        ylab("System Calculated Cq") +
-#
-#                        theme_minimal() +
-#
-#                        scale_color_gradient(low = "#fbd300", high = "#0000ff") +
-#
-#                        theme( axis.title.x = element_text( size=13),
-#                               axis.title.y = element_text( size=13),
-#                               axis.text.x = element_text(size=12),
-#                               axis.text.y = element_text(size=12),
-#                               plot.title = element_text(hjust = 0.5, size=18)) +
-#
-#                        # ggtitle(paste0("Standard Curve for ", input$SC_project_input,  "\n",
-#                        #                lm_eq(SC_plot_data)))
-#                        ggtitle(paste0("Standard Curve ",
-#                                       lm_eq(SC_plot_data)))
-#
-#             ) %>%
-#
-#               layout(margin = list(l=50, r=50, b=100, t=100, pad=4),
-#                      annotations = list(x = 1.1, y = -0.17,
-#                                         text = "Source: MDMAPR-CC-BY",
-#                                         showarrow = F,
-#                                         xref='paper',
-#                                         yref='paper',
-#                                         font=list(size=12, color="darkblue"))))
-#         })
-#       }))
-#
-#     }
-#   })#End of the observe if the stdCurve tab is open on line 1178
-
-
-#
-#     # ################### Standard Curve Table Output ################################
-#     # output$SC_overview_table  <- renderDataTable({
-#     #
-#     #   data <- ()[ , -base::c(1, 2, 3, 4, 102)]
-#     #
-#     #   datatable(data,
-#     #             options = list(scrollX = TRUE,
-#     #                            autoWidth = TRUE,
-#     #                            columnDefs = list(list(width = '500px', targets = c(84)))))})
-#     #
-#     #
-#     #
-#     #
-#     ################### Low Quant eDNA LOD Method ##################################
-#     output$lowquant_standardCurve_plot <- renderPlot({
-# #      req(())
-#
-# #      DAT <- ()[, c("standardCurveName", "runRecordedBy", "systemCalculatedCqValue", "standardConc")]
-#       # rename the columns to match the calculation
-#       colnames(DAT) <- c("Target", "Lab", "Cq", "SQ")
-#
-#       ## Ensure data is in the proper format:
-#       DAT$Target <- as.factor(DAT$Target)
-#       DAT$Lab <- as.factor(DAT$Lab)  #ML
-#       DAT$Cq <- suppressWarnings(as.numeric(as.character(DAT$Cq))) #Non-numerical values (i.e. negative wells) will be converted to NAs
-#       DAT$SQ <- suppressWarnings(as.numeric(as.character(DAT$SQ))) #Non-numerical values (i.e. NTC) will be converted to NAs
-#       # by MDMAPR Definitions, if a Cq value is 40, there is no amplification and should be converted to NA
-#       DAT$Cq[which(DAT$Cq==40)] <- NA
-#
-#       # setting all negative controls to 0
-#       DAT$SQ[is.na(DAT$SQ)] <- 0
-#       DAT.df <- data.frame(DAT)
-#
-#       # compute poisson estimates
-#       DAT.Tar.SQ <-  DAT.df %>%
-#         group_by(Target, SQ) %>%
-#         dplyr::summarise(detect=sum(!is.na(Cq)), n=n(),  Cqmean=mean(Cq, na.rm=TRUE),
-#                          Lab=Lab[1])
-#       DAT.Tar.SQ <- droplevels(data.frame(DAT.Tar.SQ))
-#       uLabs <- unique(DAT.Tar.SQ$Lab) #unique labs
-#
-#       DAT.Tar.SQ <- arrange(DAT.Tar.SQ, Lab, Target, SQ) #sort data by SQ in Target in Lab
-#
-#       ## Add variables to data set:  L10.SQ, phat, ...
-#       DAT.Tar.SQ <- within(DAT.Tar.SQ, {
-#         L10.SQ <- log10(SQ)
-#         phat <- detect/n           #sample proportion detect
-#         vphat <- phat*(1-phat)/n   #var of phat
-#         lamhat <- -log(1-phat)
-#         vlamhat <- phat/n/(1-phat)  #var of lamhat using the delta method
-#         sdlamhat <- sqrt(vlamhat)   #sd of lamhat using the delta method
-#         MElamhat <- 1.96*sdlamhat  #margin of error for lambda hat using delta method
-#       }
-#       )
-#       ## All Targets and Labs **DO NOT DUPLICATE Target names over Labs!!
-#       uLabs <- unique(DAT.Tar.SQ$Lab)
-#       uTargets <- unique(DAT.Tar.SQ$Target)
-#       nTargets <- length(uTargets)
-#       uLabsTargets <- unique(DAT.Tar.SQ[,c('Lab','Target')])
-#       uLabsTargets$Lab <- as.character(uLabsTargets$Lab)
-#
-#       #ensure ulabsTargets in same order as uTargets
-#       uLabsTargets <- uLabsTargets[match(uLabsTargets$Target, uTargets),]
-#       uLabsTargets.names <- apply(uLabsTargets, 1, paste, collapse=', ')
-#
-#       DAT.Tar.SQ <- within(DAT.Tar.SQ, {
-#         CIexphat.lower <-  1 - qbeta(.975, n-detect+1, detect)  #exact phat bounds
-#         CIexphat.upper <-  qbeta(.975, detect+1, n-detect)
-#
-#         ## Use transformed exact phat bounds
-#         Lamhatex.Lower <- -log(1 - CIexphat.lower)
-#         Lamhatex.Upper <- -log(1 - CIexphat.upper)
-#       }
-#       )
-#       print("got here2")
-#       nndetect <- vector("list", nTargets)
-#       nrowTarget <- rep(0, length=nTargets)
-#
-#       for(i in 1:nTargets) {
-#
-#         print(paste0(nTargets, "is there a mistake"))
-#
-#         Target.dat <- subset(DAT.Tar.SQ, Target==uTargets[i])
-#         print(Target.dat)
-#         bSQ <- !is.na(Target.dat$phat)
-#         lastSQ <- as.logical(cumprod(Target.dat$phat!=1 & bSQ))
-#         ## removes first observations with SQ with phat=1 and larger SQs
-#         Target.dat <- Target.dat[lastSQ,]
-#         print(Target.dat)
-#         print("with last sq")
-#         nndetect[i] <- list(Target.dat )
-#         nrowTarget[i] <- nrow(Target.dat)
-#
-#         print(nrow(nndetect[[i]]))
-#
-#         if(nrow(nndetect[[i]]) < 2) {print("we got here");next}
-#
-#         maxSQ <- max(Target.dat$SQ)
-#         maxlamhat <- max(Target.dat$lamhat)
-#
-#         ######################### show this plot on the standard curve tab
-#         print("got here 3")
-#         plot(Target.dat$SQ, Target.dat$lamhat, xlog=TRUE, ylab='Lambda hat',
-#              xlab='Starting copy number',
-#              ylim=c(0, maxlamhat), xlim=c(0, maxSQ), main=uLabsTargets.names[i])
-#         ## Transformed Exact CI
-#         arrows(Target.dat$SQ, Target.dat$Lamhatex.Lower, Target.dat$SQ,
-#                Target.dat$Lamhatex.Upper,
-#                length=0.05, angle=90, code=3)
-#         ## overlay simple regression line and R-squared
-#         jlm <- lm(lamhat ~ SQ, data=Target.dat)
-#         abline(jlm, col=2)
-#         legend("topleft", paste('lm Rsq=',round(summary(jlm)$r.squared, 2)), bty="n")
-#         print("got here 4")
-#
-#       }
-#     })
-#
-#
-#
-#     ################### qPCR Data Overview page #####################################
-#
-#     ##Presence Absence table
-#
-#     # Filter options on data overview page
-#     #Update assay list on page when additional file is uploaded
-#     DA_assay_list <- reactive({
-#
-#       if (!is.null(uploaded_data$value)) {
-#
-#         data <- as.data.frame(uploaded_data$value)
-#
-#         assay_data <- append('None', as.character(unique(data$assayName)))
-#
-#         return(assay_data)}
-#
-#       else {
-#         return(NULL)}
-#     })
-#
-#     observe({updatePickerInput(session,
-#                                "DA_assay_input",
-#                                choices = DA_assay_list(),
-#                                selected = 'nuBrook Trout TripleLock')})
-#
-#     #Update project list based on assay selection
-#     DA_project_list <- reactive({
-#
-#       if (input$DA_machine_input != 'None') {
-#
-#         data <- as.data.frame(uploaded_data$value)
-#
-#         updated_list <- data[data$assayName == input$DA_assay_input, ]
-#         updated_list <- updated_list[updated_list$runPlatform == input$DA_machine_input, ]
-#         project_list <-  as.character(unique(updated_list$projectName))
-#
-#         return(project_list)}
-#
-#       else {return(NULL)}
-#     })
-#
-#
-#     observe({updatePickerInput(session,
-#                                "DA_project_input",
-#                                choices = append('None', DA_project_list()),
-#                                selected = 'None') })
-#
-#
-#     #Transform dataframe for presence/absence table based on filtered
-#     presence_absence_table_data <- reactive({
-#
-#       if (!is.null(uploaded_data$value)) {
-#
-#         data <- uploaded_data$value
-#         PA_filtered_data <- data[data$assayName == input$DA_assay_input, ]
-#         PA_filtered_data <- PA_filtered_data[PA_filtered_data$runPlatform == input$DA_machine_input, ]
-#         PA_filtered_data <- PA_filtered_data[PA_filtered_data$projectName == input$DA_project_input, ]
-#
-#       }
-#     })
-#
-#     what_clr <- function(value) {
-#       if (value >= input$cqValueCutoff)
-#       {return ("#8FBACB")}
-#
-#       else
-#       {return("#ffb14e")}
-#     }
-#
-#
-#     available_threshold <- function(value) {
-#       if (value == "Unable to Determine Threshold")
-#       {return ("#ffd700")}
-#     }
-#
-#     # #Presence/absence table
-#     observeEvent(input$submit, isolate ({
-#
-#       output$presence_absence_table <- reactable::renderReactable({
-#         data <- as.data.frame(presence_absence_table_data())
-#
-#         prescence_abscence_table <- data[ , c("projectName", "runID", "extractName", "control", "geneSymbol", "runPlatform", "wellLocation", "userProvidedThresholdValue", "userProvidedCqValue", "systemCalculatedThresholdValue", "systemCalculatedCqValue" )]
-#
-#         reactable::reactable(prescence_abscence_table,
-#
-#                   #Table columns
-#                   columns = list(
-#
-#                     projectName = colDef(name = "Project Name",align = "center", width = 300),
-#                     runID = colDef(name = "Plate ID", align = "center"),
-#                     extractName = colDef(name = "Sample Name", align = "center", width = 200),
-#                     control = colDef(name = "Control", align = "center"),
-#                     geneSymbol = colDef(name = "Gene", align = "center"),
-#                     runPlatform = colDef(name = "Machine", align = "center"),
-#                     wellLocation = colDef(name = "Well Location", align = "center", width = 200),
-#
-#                     userProvidedThresholdValue = colDef(name = "User Provided Threshold",
-#                                                         align = "center",
-#                                                         width = 300),
-#
-#                     # userProvidedCqValue = colDef(name = "User Provided Cq Value",
-#                     #                              width = 250,
-#                     #                              style = function(value) {
-#                     #                                color  <- what_clr(value)
-#                     #                                list(background = color)}),
-#
-#                     systemCalculatedThresholdValue = colDef(name = "System Calculated Threshold",
-#                                                             width = 300,
-#                                                             align = "center",
-#                                                             style = function(value) {
-#                                                               color  <- available_threshold(value)
-#                                                               list(background = color)}),
-#
-#                     systemCalculatedCqValue = colDef(name = "System Calculated Cq Value",
-#                                                      width = 250,
-#                                                      style = function(value) {
-#                                                        color  <- what_clr(value)
-#                                                        list(background = color)})),
-#
-#                   #Filter each column by text
-#                   filterable = TRUE,
-#
-#                   #Type in page number to jump to a page
-#                   paginationType = "jump",
-#
-#                   #Minimum rows shown on page
-#                   minRows = 20,
-#
-#                   #Number of rows to show
-#                   defaultPageSize = 20,
-#
-#                   #Adding outline around cells
-#                   outlined = TRUE,
-#
-#                   #Color every other row
-#                   striped = TRUE,
-#
-#                   #Hover above row to highlight it
-#                   highlight = TRUE,
-#
-#                   #Default record selected from table
-#                   defaultSelected = 1,
-#
-#                   #Check box
-#                   selection = "single",
-#
-#                   #Wrap text in column
-#                   wrap = FALSE,
-#
-#                   theme = reactable::reactableTheme(rowSelectedStyle = list(backgroundColor = "#eee",
-#                                                                  boxShadow = "inset 2px 0 0 0 #ffa62d"))
-#         )
-#       })
-#     }))
-#     #
-#     #
-#     # ## Amplification plot
-#     #
-#     # #Get selected row for amplification plot
-#     selected <- reactive(reactable::getReactableState("presence_absence_table", "selected"))
-#     #
-#     # #Created amplifcation plot based on selected well sample
-#     #
-#     observeEvent(input$submit, isolate ({
-#
-#       output$selected <-  renderPlotly({
-#
-#         #Created dataframe of filtered presence/absence data
-#         data <- as.data.frame(presence_absence_table_data())[selected(), ]
-#
-#         #Create data frame for amplification curve
-#         amp_curve_data <- na.omit(as.data.frame(t(data[ , c(18:87)])))
-#         colnames(amp_curve_data) <- "Fluorescence"
-#         amp_curve_data$cycles <- c(1:nrow(amp_curve_data))
-#
-#
-#         #Created plot
-#         print(
-#           ggplotly(height = 700,
-#
-#                    ggplot(amp_curve_data, aes(x = cycles, y = as.numeric(Fluorescence))) +
-#
-#                      geom_point(aes(colour = "Absorbances") , size = 2) +
-#
-#                      geom_hline(aes(yintercept = as.numeric(data$userProvidedThresholdValue),
-#                                     color = "User Provided Threshold"),
-#                                 linetype="dashed", size = 1) +
-#
-#                      geom_hline(aes(yintercept = as.numeric(data$systemCalculatedThresholdValue),
-#                                     color = "System Calculated Threshold"),
-#                                 linetype="dotted", size = 1) +
-#
-#
-#                      ggtitle(paste0( "Well ", data$wellLocation, " Amplification Curve")) +
-#
-#                      labs(x = " Cycle", y = "Absorbance") +
-#
-#                      theme_gray() +
-#
-#                      scale_colour_manual("",
-#                                          breaks = c("Absorbances",
-#                                                     "User Provided Threshold",
-#                                                     "System Calculated Threshold"),
-#                                          values = c("User Provided Threshold"="#ea5f94",
-#                                                     "Absorbances"="#0000ff",
-#                                                     "System Calculated Threshold"="#ff8600")) +
-#
-#                      theme(plot.title = element_text(hjust = 0.5, size=18),
-#                            axis.title.x = element_text( size=13),
-#                            axis.title.y = element_text( size=13),
-#                            axis.text.x = element_text(size=12),
-#                            axis.text.y = element_text(size=12),
-#                            legend.text = element_text(size = 10),
-#                            legend.background = element_rect(fill="lightblue")))  %>%
-#
-#             layout(legend = list(orientation = "h", x = 0.02, y = -0.16), #legend position
-#                    margin = list(l=50, r=60, b=140, t=100, pad=4),
-#                    annotations = list(x = 1, y = -0.31,
-#                                       text = "Source: MDMAPR-CC-BY",
-#                                       showarrow = F,
-#                                       xref='paper',
-#                                       yref='paper',
-#                                       font=list(size=12,
-#                                                 color="darkblue"))))})
-#     }))
-#
-#     #
-#     #    ## welcome page (Create downloadable metadata template) -----
-#     #
-#     #    #Created  metadata template for users to download
-#     #    project_sheet <- data.frame(matrix(ncol = 24, nrow = 1))
-#
-#     #    colnames(project_sheet) <- c("projectID", "projectCreationDate","projectName","projectRecordedBy","projectOwner","projectContactEmail","projectDescription","InstitutionID","projectDataNotes","geographicRegionID", "continent","country", "stateProvince","municipality","siteID", "locality","estimatedPerimeter","estimatedSurfaceArea(m2)","siteType","siteLength(m2)", "stationID","stationName", "decimalLongitude", "decimalLatitude")
-#
-#
-#     #    replicate_sheet <- data.frame(matrix(ncol = 55, nrow = 1))
-#     #    colnames(replicate_sheet) <- c("replicateID", "stationID", "collectorName","replicateName","collectionDate","collectionTime","storageID","DateOfStorage","methodOfStorage","minimumElevationInMeters","maximumElevationInMeters","verbatimElevation","minimumDepthInMeters","maximumDepthInMeters","verbatimDepth","flowRate(m/s)", "filterType","filtrationDuration(mins)","volumeFiltered","processLocation","replicationNumber","riparianVegetationPercentageCover","dissolvedOxygen(mg/L)","waterTemperature(C)","pH","TSS(mg/L)","EC(uS/cm)","turbidity(NTU)","discharge","tide","chlorophyl","salinity(ppt)","contaminants(ng/g)","traceMetals(mg/kg)","organicContent(%)","microbialActivity","grainSize","replicateDataNotes", "extractID", "extractName","analyst", "extractionDate", "extractionTime", "location", "extractionMethod", "methodCitation", "extractionNotes","tubePlateID","frozen", "fixed","dnaStorageLocation","extractMethodOfStorage","dnaVolume","quantificationMethod", "concentration(ng/ul)")
-#
-#
-#     #    assay_sheet <- data.frame(matrix(ncol = 30, nrow = 1))
-#     #    colnames(assay_sheet) <- c( "assayID", "establishmentMeans","assayName","assayOwnership","assayDescription", "assayCitation", "assayDate", "geneTarget", "geneSymbol","dilutions", "replicates", "primerR", "primerF", "probe","ampliconLength (bp)", "probeFluorescentTag", "dye(s)","quencher","probeModification", "taxonID", "kingdom","phylum","class","order","family", "genus", "subgenus", "species", "vernacularName","organismScope")
-#
-#     #    results_sheet <- data.frame(matrix(ncol = 29, nrow = 1))
-#     #    colnames(results_sheet) <- c("resultID","assayID", "extractID", "wellLocation","sampleName", "copyNumber", "control", "userProvidedThresholdValue", "userProvidedCqValue", "runID", "runRecordedBy", "runDate", "runTime","runPlatform","machineID", "pcrChemistryID","reactionConditions","reactionVolume","templateAmount","forwardPrimerBatch", "reversePrimerBatch", "dNTPConcentration", "primerConcentration","probeConcentration", "Mg2+Concentration", "polymeraseBatch","polymeraseConcentrations","thermocyclerParameters", "pcrDataNotes")
-#
-#     #    standardCurveResults_sheet <- data.frame(matrix(ncol = 36, nrow = 1))
-#     #    colnames(standardCurveResults_sheet ) <- c("SCresultID","wellLocation","sampleName", "copyNumber", "control","standardConc",   "userProvidedThresholdValue", "userProvidedCqValue","runID", "runRecordedBy", "runDate", "runTime", "runPlatform","machineID", "standardCurveID","assayID", "standardCurveName", "SCdate", "SCrecordedBy", "SCdataNotes", "LOD","LOQ", "pcrChemistryID","reactionConditions","reactionVolume","templateAmount","forwardPrimerBatch", "reversePrimerBatch", "dNTPConcentration", "primerConcentration","probeConcentration", "Mg2+Concentration", "polymeraseBatch","polymeraseConcentrations","thermocyclerParameters", "pcrDataNotes")
-#
-#
-#     #    data_list <- (list( project_Table = project_sheet,
-#     #                        replicate_Table = replicate_sheet,
-#     #                        assay_Table = assay_sheet,
-#     #                        results_Table = results_sheet,
-#     #                        standardCurveResults_Table = standardCurveResults_sheet))
-#
-#     #    output$downloadTemplate <- downloadHandler(
-#     #      filename = 'MDMAPR_metadata_template.xlsx',
-#     #      content = function(file) {write_xlsx(data_list, file)})
-#
-#
-#
-#
-#     ################### Data Modelling page ########################################
-#
-#     output$report <- downloadHandler(
-#       # For PDF output, change this to "report.pdf"
-#       filename = paste("report", sep = ".", "html"),
-#       content = function(file) {
-#         # Copy the report file to a temporary directory before processing it, in
-#         # case we don't have write permissions to the current working dir (which
-#         # can happen when deployed).
-#         tempReport <- file.path(tempdir(), "report.Rmd")
-#         file.copy("report.Rmd", tempReport, overwrite = TRUE)
-#
-#         # Set up parameters to pass to Rmd document
-#         params <- list(n = input$selectData)
-#
-#         # Knit the document, passing in the `params` list, and eval it in a
-#         # child of the global environment (this isolates the code in the document
-#         # from the code in this app).
-#         rmarkdown::render(tempReport,
-#                           output_file = file,
-#
-#                           envir = new.env(parent = globalenv()))
-#       }
-#     )
-#
-#     # initialize the reactive value
-#     InputDataset <- reactiveVal(NULL)
-#
-#     # read in the uploaded csv file, also removing all columns that are all NA
-#     observeEvent(input$submit_modelling,{
-#       modelling_data <- as.data.frame(read.csv(input$model_data$datapath))
-#       # need to convert all NULL to NA
-#       modelling_data[modelling_data=="NULL"] <- NA
-#       modelling_data <- modelling_data[colSums(!is.na(modelling_data)) > 0]
-#
-#       # convert all character variables into factor
-#       modelling_data[sapply(modelling_data, is.character)] <- lapply(modelling_data[sapply(modelling_data, is.character)],
-#                                                                      as.factor)
-#       # remove the columns that have only one value throughout.
-#       modelling_data <- modelling_data[vapply(modelling_data, function(x) length(unique(x)) > 1, logical(1L))]
-#       return(InputDataset(modelling_data))
-#
-#     })
-#
-#
-#     InputDataset_model <- reactive({
-#       if (is.null(input$SelectX)) {
-#         dt <- as.data.frame(InputDataset())
-#       }
-#       else{
-#         dt <- as.data.frame(InputDataset()[, c(input$SelectX)])
-#       }
-#
-#     })
-#
-#
-#     output$Xvarselection <- renderUI({
-#       shinydashboard::box(
-#         pickerInput("SelectX",
-#                     "Select variables:",
-#                     multiple = TRUE,
-#                     choices = as.character(names(InputDataset_model())),
-#                     selected=as.character(names(InputDataset_model())),
-#                     width="200px"),
-#         status = "primary",
-#         width = "300px",
-#         height = "200px",
-#         solidHeader = TRUE,
-#         title = "X variables")
-#     })
-#
-#     #
-#     output$SelectY <-  renderUI({
-#       shinydashboard::box(
-#         selectizeInput('SelectY',
-#                        "Select variable to predict:",
-#                        multiple = F,
-#                        choices = as.character(names(InputDataset())),
-#                        selected=1,
-#                        width="200px"),
-#         status = "primary",
-#         width = "300px",
-#         height = "200px",
-#         solidHeader = TRUE,
-#         title = "Y Variable")
-#     })
-#
-#
-#     # observe({
-#     #   lstname <- names(InputDataset())
-#     #   updateSelectInput(session = session,
-#     #                     inputId = "SelectY",
-#     #                     choices = lstname)
-#     # })
-#
-#     splitSlider <- reactive({
-#       input$Slider1 / 100
-#     })
-#     output$Summ <-
-#       renderPrint(
-#         stargazer(
-#           InputDataset(),
-#           type = "text",
-#           title = "Descriptive statistics",
-#           digits = 1,
-#           out = "table1.txt"
-#         )
-#       )
-#     output$Summ_old <- renderPrint(summary(InputDataset()))
-#     output$structure <- renderPrint(str(InputDataset()))
-#
-#     set.seed(100)  # setting seed to reproduce results of random sampling
-#     trainingRowIndex <-
-#       reactive({
-#         sample(1:nrow(InputDataset_model()),
-#                splitSlider() * nrow(InputDataset_model()))
-#       })# row indices for training data
-#
-#     trainingData <- reactive({
-#       tmptraindt <- InputDataset_model()
-#       tmptraindt[trainingRowIndex(), ]
-#     })
-#
-#     testData <- reactive({
-#       tmptestdt <- InputDataset_model()
-#       tmptestdt[-trainingRowIndex(),]
-#     })
-#
-#
-#
-#     output$cntTrain <-
-#       shiny::renderText(paste("Train Data:", NROW(trainingData()), "records"))
-#     output$cntTest <-
-#       shiny::renderText(paste("Test Data:", NROW(testData()), "records"))
-#
-#     output$Data <- DT::renderDT(InputDataset())
-#
-#     # identify variables that are numeric for correlation matrix
-#     numeric_model_input <- reactive({
-#       nums <- unlist(lapply(InputDataset(), is.numeric))
-#       return(InputDataset()[ , nums])
-#     })
-#
-#     cormat <- reactive({
-#       round(cor(numeric_model_input()), 1)
-#     })
-#     output$Corr <-
-#       renderPlot(corrplot(
-#         cormat(),
-#         type = "lower",
-#         order = "hclust",
-#         method = "number"
-#       ))
-#
-#     correlationMatrix <- reactive({
-#       cor(numeric_model_input())
-#       print(cor(numeric_model_input()))
-#     })
-#
-#     # it's this line that causes problems
-#     output$CorrMatrix <-
-#       renderPrint(round(as.data.frame(correlationMatrix()), 4))
-#     #
-#
 }
