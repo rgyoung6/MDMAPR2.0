@@ -16,6 +16,7 @@ Depends:
 Imports: 
   DT,
   dplyr,
+  ggplot2,
   leaflet, 
   leaflet.extras, 
   plotly, 

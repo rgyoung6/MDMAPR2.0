@@ -1,5 +1,11 @@
 
 
+# #build the uniue ID comparable between the RDML and the Metadata files
+# (fdata$exp.id,"_",fdata$run.id,"_", fdata$react.id,"_", fdata$target,"_",fdata$sample)sample.type, target.dye
+#
+# ("projectID","resultRunID", "resultReactID", "assayGeneTarget", replicateID" )]resultSampleType, assayDyes
+
+
 
 # #' @import shinyalert
 # #' @import shinydashboard
@@ -121,6 +127,7 @@
 #' @importFrom shinyFiles shinyFileChoose
 #' @importFrom shinyFiles parseFilePaths
 #' @importFrom stats family
+#' @importFrom stats fitted
 #' @importFrom stats lm
 #' @importFrom stats mad
 #' @importFrom stats na.exclude
@@ -132,6 +139,7 @@
 #' @importFrom utils head
 #' @importFrom utils tail
 #' @importFrom utils zip
+#' @importFrom utils unzip
 #' @importFrom utils read.table
 #' @importFrom utils write.table
 #' @import RDML
@@ -650,9 +658,18 @@ print("calculate_SC_LOD_LOQ - Begin")
     print("Begin logLinear")
 
     #Define the R squared log linear cutoff
-    RSquaredCutoff = 0.99
+    RSquaredCutoff = 0.98
     #Set up the vector to hold the results
-    logLinear <- base::c()
+    logLinearVal <- base::c()
+    efficiencyVal <- base::c()
+    equationVal <- base::c()
+
+
+
+    # my_list <<- c()
+
+
+
 
     #so loop through all of the records in the data set.
     for(logLinearLoopCounter in 1:nrow(cqDataTable)){
@@ -670,10 +687,24 @@ print("calculate_SC_LOD_LOQ - Begin")
 
         for (logLinearEndCounter in 1:(length(raw_multiplex_data))) {
 
-          if(length(raw_multiplex_data)-logLinearEndCounter >1){
+          if(length(raw_multiplex_data)-logLinearEndCounter+1 >2){
 
             # Current values without the last i elements
-            current_values <- raw_multiplex_data[1:(length(raw_multiplex_data)-logLinearEndCounter)]
+            current_values <- raw_multiplex_data[1:(length(raw_multiplex_data)-logLinearEndCounter+1)]
+
+
+
+
+
+
+# current_valuesGlobal <<- current_values
+# logLinearEndCounterGlobal <<- logLinearEndCounter
+# raw_multiplex_dataGlobal <<- raw_multiplex_data
+
+
+
+
+
 
             # Create a vector of numbers from 1 to the length of the current_values
             numbers <- 1:length(current_values)
@@ -682,6 +713,9 @@ print("calculate_SC_LOD_LOQ - Begin")
             df <- data.frame(Number = numbers, Value = current_values)
 
             fit <- lm(log10(as.numeric(df$Value)) ~ as.numeric(df$Number))
+
+
+
             r_squared <- summary(fit)$r.squared
 
             # print(paste0("R squared - ", r_squared, " length cycle - ", length(current_values)))
@@ -689,22 +723,43 @@ print("calculate_SC_LOD_LOQ - Begin")
 
               logLinearEnd = CqValue + length(raw_multiplex_data) - logLinearEndCounter
 
+              #Using the identified exponential region equation of the line get the slope and calc the eff.
+              effSlope <- as.numeric(stats::coef(fit)[2])
+
+              #Calculate the efficiency
+              efficiency <- ((10^effSlope) - 1) * 100
+
+              efficiencyVal <- base::c(efficiencyVal, efficiency)
+
+              #Build the equation of the line for output to the data frame
+              equation <- paste("y =",   round(stats::coef(fit)[2], 10), "x", "+",round(stats::coef(fit)[1], 10))
+              equationVal <- base::c(equationVal,equation)
+
+
+              # my_list <<- c(my_list, equationVal)
+
+
+
               #Add the results from this loop
               loopResult <- paste0(floor(CqValue),":",ceiling(logLinearEnd))
-              logLinear <- base::c(logLinear,loopResult)
+              logLinearVal <- base::c(logLinearVal,loopResult)
               break
             }
 
           }else{
-            logLinear <- base::c(logLinear,"Unable to compute")
+            logLinearVal <- base::c(logLinearVal,"Unable to compute")
+            efficiencyVal <- base::c(efficiencyVal,"Unable to compute")
+            equationVal <- base::c(equationVal,"Unable to compute")
             break
           }
         }
       }else{
-        logLinear <- base::c(logLinear,"Unable to compute")
+        logLinearVal <- base::c(logLinearVal,"Unable to compute")
+        efficiencyVal <- base::c(efficiencyVal,"Unable to compute")
+        equationVal <- base::c(equationVal,"Unable to compute")
       }#End of if else
     }#End of loop
-    logLinearResults <- data.frame(logLinear)
+    logLinearResults <- data.frame(logLinearVal = logLinearVal, efficiencyVal = efficiencyVal, equationVal = equationVal)
     return(logLinearResults)
   }#End of PCR efficiency function
 
@@ -786,7 +841,26 @@ print("calculate_SC_LOD_LOQ - Begin")
     #Add the values to the totalMDMAPRDataFile
     totalMDMAPRDataFile$value <- replace_columns(totalMDMAPRDataFile$value, raw_multiplex_data, base::c("mdmaprLogLinear"))
 
-    #Run the PCR_Eff function and get the efficienceies of the PCR's
+
+
+    #Add the results from the PCR efficiency back to the main data frame
+    raw_multiplex_data<-cbind(totalMDMAPRDataFile$value, mdmaprLogLinearEq = logLinearOut[,3])
+
+    #Add the values to the totalMDMAPRDataFile
+    totalMDMAPRDataFile$value <- replace_columns(totalMDMAPRDataFile$value, raw_multiplex_data, base::c("mdmaprLogLinearEq"))
+
+
+
+
+    #Add the results from the PCR efficiency back to the main data frame
+    raw_multiplex_data<-cbind(totalMDMAPRDataFile$value, mdmaprPCREfficiency = logLinearOut[,2])
+
+    #Add the values to the totalMDMAPRDataFile
+    totalMDMAPRDataFile$value <- replace_columns(totalMDMAPRDataFile$value, raw_multiplex_data, base::c("mdmaprPCREfficiency"))
+
+
+
+    #Run the logLinear function and get the efficienceies of the PCR's
     logLinearOut <- logLinear(totalMDMAPRDataFile$value, "resultUserProvCq")
 
     #Add the results from the PCR efficiency back to the main data frame
@@ -794,6 +868,18 @@ print("calculate_SC_LOD_LOQ - Begin")
 
     #Add the values to the totalMDMAPRDataFile
     totalMDMAPRDataFile$value <- replace_columns(totalMDMAPRDataFile$value, raw_multiplex_data, base::c("userLogLinear"))
+
+    #Add the line equation for the log linear linear regression
+    raw_multiplex_data<-cbind(totalMDMAPRDataFile$value, userLogLinearEq = logLinearOut[,3])
+
+    #Add the values to the totalMDMAPRDataFile
+    totalMDMAPRDataFile$value <- replace_columns(totalMDMAPRDataFile$value, raw_multiplex_data, base::c("userLogLinearEq"))
+
+    #Add the results from the PCR efficiency back to the main data frame
+    raw_multiplex_data<-cbind(totalMDMAPRDataFile$value, userPCREfficiency = logLinearOut[,2])
+
+    #Add the values to the totalMDMAPRDataFile
+    totalMDMAPRDataFile$value <- replace_columns(totalMDMAPRDataFile$value, raw_multiplex_data, base::c("userPCREfficiency"))
 
     #################### Standard Curve Data prep ##################################
 
@@ -940,7 +1026,9 @@ print("calculate_SC_LOD_LOQ - Begin")
     #Add the copy number to the data frame
     totalMDMAPRDataFile$value <- cbind(totalMDMAPRDataFile$value, as.data.frame(sampleCopyNumber))
 
-    removeModal()
+
+
+    shiny::removeModal()
     shiny::showModal(shiny::modalDialog(
       title = "Data processing is complete...",
     ))
@@ -1011,6 +1099,258 @@ print("End complete_calc")
     return(list(binned_data = result_df, sorted_range_labels = sorted_range_labels))
 
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  #################### Rad in the RDML data file #########################
+
+  readInRDMLDataFunction<- function(fileLocation){
+
+    RDMLLoadErrorFlag = 0
+
+    tryCatch(
+      expr = {
+
+        print("In the RDML Load TryCatch")
+
+        #Load in the RDML data
+        readInRDMLData$value <- RDML$new(filename = fileLocation)
+
+      },
+      error = function(e){
+
+        tryCatch(
+          expr = {
+
+            print("In the RDML Load Error - TryCatch fix Nan")
+
+            # Section to replace Cq Nan values in a RDML file
+            # Create a unique subdirectory based on timestamp
+            timestamp <- gsub("[: ]", "_", Sys.time()) # Replace colons and spaces with underscores
+            temp_dir <- file.path(tempdir(), paste0("temp_", timestamp)) # Unique subdirectory
+            dir.create(temp_dir) # Create the new temporary directory
+
+            # Extract the file from the .zip archive
+            unzip(fileLocation, exdir = temp_dir) # Extracts to the newly created temporary directory
+
+            # Find the extracted file (assuming there's only one file)
+            extracted_files <- list.files(temp_dir, full.names = TRUE)
+            if (length(extracted_files) != 1) {
+              stop("Expected exactly one file in the zip archive")
+            }
+
+            extracted_file_path <- extracted_files[1] # Path of the extracted file
+
+            # Read the file content as a string
+            file_content <- readLines(extracted_file_path, warn = FALSE)
+
+            # Replace "<cq>NaN</cq>" with "<cq></cq>"
+            #lines <- gsub("<cq>NaN</cq>", "<cq></cq>", file_content)
+            lines <- gsub("<cq>NaN</cq>", "", file_content)
+
+            # Write the updated content to the temporary file
+            writeLines(lines, extracted_file_path)
+
+            # Create a zip file containing the XML file
+            zip(zipfile = paste0(dirname(extracted_file_path),"/tempRDML.rdml"), files = extracted_file_path)
+
+            #Load in the RDML data
+            readInRDMLData$value <- RDML$new(filename = paste0(dirname(extracted_file_path),"/tempRDML.rdml"))
+
+
+
+
+
+            # raw_dataErrorTrycatchGlobal <<- readInRDMLData$value
+
+
+
+
+
+
+          },
+          error = function(e){
+
+            print("In the RDML Load Error-Error")
+
+            RDMLLoadErrorFlag = 1
+
+          },
+          warning = function(w){
+
+            print("In the RDML Load Error-Warning")
+
+            RDMLLoadErrorFlag = 1
+
+          }
+        )
+
+      },
+      warning = function(w){
+
+        tryCatch(
+          expr = {
+
+            print("In the RDML Load Warning - TryCatch fix Nan")
+
+            # Section to replace Cq Nan values in a RDML file
+            # Create a unique subdirectory based on timestamp
+            timestamp <- gsub("[: ]", "_", Sys.time()) # Replace colons and spaces with underscores
+            temp_dir <- file.path(tempdir(), paste0("temp_", timestamp)) # Unique subdirectory
+            dir.create(temp_dir) # Create the new temporary directory
+
+            # Extract the file from the .zip archive
+            unzip(fileLocation, exdir = temp_dir) # Extracts to the newly created temporary directory
+
+            # Find the extracted file (assuming there's only one file)
+            extracted_files <- list.files(temp_dir, full.names = TRUE)
+            if (length(extracted_files) != 1) {
+              stop("Expected exactly one file in the zip archive")
+            }
+
+            extracted_file_path <- extracted_files[1] # Path of the extracted file
+
+            # Read the file content as a string
+            file_content <- readLines(extracted_file_path, warn = FALSE)
+
+            # Replace "<cq>NaN</cq>" with "<cq></cq>"
+            #lines <- gsub("<cq>NaN</cq>", "<cq></cq>", file_content)
+            lines <- gsub("<cq>NaN</cq>", "", file_content)
+
+            # Write the updated content to the temporary file
+            writeLines(lines, extracted_file_path)
+
+            # Create a zip file containing the XML file
+            zip(zipfile = paste0(dirname(extracted_file_path),"/tempRDML.rdml"), files = extracted_file_path)
+
+            #Load in the RDML data
+            readInRDMLData$value <- RDML$new(filename = paste0(dirname(extracted_file_path),"/tempRDML.rdml"))
+
+          },
+          error = function(e){
+
+            print("In the RDML Load Warning-Error")
+
+            RDMLLoadErrorFlag = 1
+
+          },
+          warning = function(w){
+
+            print("In the RDML Load Warning-Warning")
+
+            RDMLLoadErrorFlag = 1
+
+          }
+        )
+
+
+      }
+    )
+
+    return(RDMLLoadErrorFlag)
+
+  }
+
+  #################### Replace NA values in a RDML file#########################
+  # Function to read, modify, and overwrite the file
+  replace_cq_nan <- function(file_path) {
+
+#print("replace_cq_nan 1")
+
+    # Create a unique subdirectory based on timestamp
+    timestamp <- gsub("[: ]", "_", Sys.time()) # Replace colons and spaces with underscores
+
+#print("replace_cq_nan 2")
+
+    temp_dir <- file.path(tempdir(), paste0("temp_", timestamp)) # Unique subdirectory
+
+#print("replace_cq_nan 3")
+
+    dir.create(temp_dir) # Create the new temporary directory
+
+#print("replace_cq_nan 4")
+
+    # Extract the file from the .zip archive
+    unzip(file_path, exdir = temp_dir) # Extracts to the newly created temporary directory
+
+#print("replace_cq_nan 5")
+
+    # Find the extracted file (assuming there's only one file)
+    extracted_files <- list.files(temp_dir, full.names = TRUE)
+
+#print("replace_cq_nan 6")
+
+    if (length(extracted_files) != 1) {
+      stop("Expected exactly one file in the zip archive")
+    }
+
+#print("replace_cq_nan 7")
+
+    extracted_file_path <- extracted_files[1] # Path of the extracted file
+
+#print("replace_cq_nan 8")
+
+    # Read the file content as a string
+    file_content <- readLines(extracted_file_path, warn = FALSE)
+
+#print("replace_cq_nan 9")
+
+    # Replace "<cq>NaN</cq>" with "<cq></cq>"
+    #lines <- gsub("<cq>NaN</cq>", "<cq></cq>", file_content)
+    lines <- gsub("<cq>NaN</cq>", "", file_content)
+
+#print("replace_cq_nan 10")
+
+    # Write the updated content to the temporary file
+    writeLines(lines, extracted_file_path)
+
+#print("replace_cq_nan 11")
+
+    # Create a zip file containing the XML file
+    zip(zipfile = paste0(dirname(extracted_file_path),"/tempRDML.rdml"), files = extracted_file_path)
+
+#print("replace_cq_nan 12")
+
+    #Load in the RDML data
+    readInRDMLData$value <- RDML$new(filename = paste0(dirname(extracted_file_path),"/tempRDML.rdml"))
+
+#raw_dataInFunctionGlobal<<- readInRDMLData$value
+#print("replace_cq_nan 13")
+
+    return()
+
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   #################### Mapping the filtered data ###############################
   setMappingDataPoints <- function(filtered, mappedValueVal) {
@@ -1448,13 +1788,14 @@ print("filterOptionsUpdate - End ")
     })
   }
 
-
-
   ############## Initialize variables #########################################
 
   #dataImport file location reactive values
   qpcr_file <- shiny::reactiveValues(data = NA)
   metadata_file <- shiny::reactiveValues(data = NA)
+
+  #Reactive values to hold the read in RDML data
+  readInRDMLData <- shiny::reactiveValues(value = NA)#Initialize the RDML data variable
 
   #Reactive values to hold the read in metadata
   readInMetadata <- shiny::reactiveValues(value = setResetMdmaprDataFile())
@@ -1498,6 +1839,9 @@ print("filterOptionsUpdate - End ")
   # Set the LOD and LOQ threshold and detect rate for the entire program
   threshold <- shiny::reactiveValues(value = 0.35)#LOQ value
   detectRate <- shiny::reactiveValues(value = 0.95)#LOD value
+
+
+
 
   ####################### Data reset button ####################################
   observeEvent(input$resetDataImport, {
@@ -1619,32 +1963,100 @@ print("resetDataImport - End")
       paste0("In directory: ", getwd(), " in file: ", format(Sys.time(), "%Y_%m_%d_%H%M%S"), "_RDML_Data.tsv")
     ))
 
-    #Load in the RDML data
-    raw_data <- RDML$new(filename = qpcr_file$data)
+    # readInRDMLDataFunction if it works it will store the data in
+    # readInRDMLData$value and it will return a value of 0 if successful or 1
+    # if there was a flag/error
+    RDMLLoadErrorFlag <- readInRDMLDataFunction(qpcr_file$data)
 
-    # Extract fluorescence data in wide format and the metadata in a long format
-    fdata <- as.data.frame(t(raw_data$GetFData(long.table = FALSE)))
-    metadata <- as.data.frame(raw_data$GetFData(long.table = TRUE))
+    if(RDMLLoadErrorFlag == 0){
 
-    #Work the metadata
-    metadata<-metadata[,base::c(1:(ncol(metadata)-2)),drop = FALSE]
-    metadata<-unique(metadata)
-    metadata<-metadata[,-1,drop=FALSE]
 
-    #Remove the row names for the fdata
-    fdata<-fdata[-1,,drop=FALSE]
 
-    # Add metadata to fluorescence data
-    combined_data <- cbind(metadata, fdata)
 
-    #Print to file
-    utils::write.table(as.data.frame(combined_data), file = paste0(format(Sys.time(), "%Y_%m_%d_%H%M%S"), "_RDML_Data.tsv"),
-                row.names = FALSE, col.names=TRUE, append = FALSE, sep="\t", quote = FALSE, na = "NA")
 
-    #Reset the RDML data input
-    readInqPCRData$value <- data.frame(built_unique_ID = character(0), Cycle1 = numeric(0))
-    output$qpcr_file_out <- shiny::renderText({as.character()})
-    output$data_present <- shiny::renderText({ as.character("No Data Loaded")})
+
+# print(paste0("In the if where the RDMLLoadErrorFlag is... ", RDMLLoadErrorFlag))
+# rawDataGlobal<<-readInRDMLData$value
+
+
+
+
+
+
+
+      # Extract fluorescence data in wide format and the metadata in a long format
+      fdata <- as.data.frame(t(readInRDMLData$value$GetFData(long.table = FALSE)))
+      metadata <- as.data.frame(readInRDMLData$value$GetFData(long.table = TRUE))
+
+
+
+
+
+
+      #
+      # fdataGlobal1<<-fdata
+      # metadataGlobal1<<-metadata
+
+
+
+
+
+
+
+      #Work the metadata
+      metadata<-metadata[,base::c(1:(ncol(metadata)-2)),drop = FALSE]
+      metadata<-unique(metadata)
+      metadata<-metadata[,-1,drop=FALSE]
+
+      #Remove the row names for the fdata
+      fdata<-fdata[-1,,drop=FALSE]
+
+
+
+
+
+      # fdataGlobal2<<-fdata
+      # metadataGlobal2<<-metadata
+
+
+
+
+
+
+      # Add metadata to fluorescence data
+      combined_data <- cbind(metadata, fdata)
+
+
+      # combined_dataGlobal1 <<-combined_data
+      # paste0(format(Sys.time(), "%Y_%m_%d_%H%M%S"), "_RDML_Data.tsv")
+      #
+      #
+
+
+
+
+      #Print to file
+      utils::write.table(as.data.frame(combined_data), file = paste0(format(Sys.time(), "%Y_%m_%d_%H%M%S"), "_RDML_Data.tsv"),
+                         row.names = FALSE, col.names=TRUE, append = FALSE, sep="\t", quote = FALSE, na = "NA")
+
+      #Reset the RDML data input
+      readInqPCRData$value <- data.frame(built_unique_ID = character(0), Cycle1 = numeric(0))
+      output$qpcr_file_out <- shiny::renderText({as.character()})
+      output$data_present <- shiny::renderText({ as.character("No Data Loaded")})
+
+      print("End downloadRDMLTable")
+
+    } else if(RDMLLoadErrorFlag == 1){
+
+      shiny::removeModal()
+
+      shiny::showModal(shiny::modalDialog(
+        title = "Incorrect RDML file format - Please inspect your file and try again.",
+      ))
+
+    }
+
+
 
   },ignoreInit = TRUE)
 
@@ -1981,22 +2393,39 @@ print("RDML but not Meta")
             }else{
 
               #Load in the RDML data
-              raw_data <- RDML$new(filename = qpcr_file$data)
+              # readInRDMLData$value <- RDML$new(filename = qpcr_file$data)
 
-              #pull all the fluorescence data
-              fdata <- as.data.frame(raw_data$GetFData(long.table = T))
+              # readInRDMLDataFunction if it works it will store the data in
+              # readInRDMLData$value and it will return a value of 0 if successful or 1
+              # if there was a flag/error
+              RDMLLoadErrorFlag <- readInRDMLDataFunction(qpcr_file$data)
 
-              #Process the data using the function process_Multiplexed_RDML
-              readInqPCRData$value <- process_Multiplexed_RDML(fdata)
+              if(RDMLLoadErrorFlag == 0){
 
-              #Make the currently loaded data equal to to newly loaded data
-              readInMetadata$value <- totalMDMAPRDataFile$value
+                #pull all the fluorescence data
+                fdata <- as.data.frame(readInRDMLData$value$GetFData(long.table = T))
 
-              #Combine the read in readInMetadata$value and readInqPCRData$value
-              totalMDMAPRDataFile$value <- combineReadInDataFiles(totalMDMAPRDataFile$value, readInMetadata$value, readInqPCRData$value)
+                #Process the data using the function process_Multiplexed_RDML
+                readInqPCRData$value <- process_Multiplexed_RDML(fdata)
 
-              #Run the calculation function
-              complete_calc()
+                #Make the currently loaded data equal to to newly loaded data
+                readInMetadata$value <- totalMDMAPRDataFile$value
+
+                #Combine the read in readInMetadata$value and readInqPCRData$value
+                totalMDMAPRDataFile$value <- combineReadInDataFiles(totalMDMAPRDataFile$value, readInMetadata$value, readInqPCRData$value)
+
+                #Run the calculation function
+                complete_calc()
+
+              } else if(RDMLLoadErrorFlag == 1){
+
+                shiny::removeModal()
+
+                shiny::showModal(shiny::modalDialog(
+                  title = "Incorrect RDML file format - Please inspect your file and try again.",
+                ))
+
+              }
 
             }
           },
@@ -2053,7 +2482,10 @@ print("RDML but not Meta")
             built_unique_ID <- readInMetadata$value[, base::c("projectID","resultRunID", "resultReactID", "assayGeneTarget", "replicateID" ), drop=FALSE]
 
 #print("RDML and Meta - 6")
-built_unique_IDGlobalRDMLMeta6<<-built_unique_ID
+# built_unique_IDGlobalRDMLMeta6<<-built_unique_ID
+
+
+
 
             #Remove all whitespaces
             # Apply gsub to remove all white spaces from specified columns
@@ -2096,49 +2528,67 @@ built_unique_IDGlobalRDMLMeta6<<-built_unique_ID
 #print("RDML and Meta - 13")
 
               #Load in the RDML data
-              raw_data <- RDML$new(filename = qpcr_file$data)
+              # readInRDMLData$value <- RDML$new(filename = qpcr_file$data)
 
-#print("RDML and Meta - 14")
+              # readInRDMLDataFunction if it works it will store the data in
+              # readInRDMLData$value and it will return a value of 0 if successful or 1
+              # if there was a flag/error
+              RDMLLoadErrorFlag <- readInRDMLDataFunction(qpcr_file$data)
 
-              #pull all the fluorescence data
-              fdata <- as.data.frame(raw_data$GetFData(long.table = T))
 
-#print("RDML and Meta - 15")
+              if(RDMLLoadErrorFlag == 0){
 
-              #Process the data using the function process_Multiplexed_RDML
-              readInqPCRData$value <- process_Multiplexed_RDML(fdata)
+  #print("RDML and Meta - 14")
 
-#print("RDML and Meta - 16")
+                #pull all the fluorescence data
+                fdata <- as.data.frame(readInRDMLData$value$GetFData(long.table = T))
 
-              if (nrow(totalMDMAPRDataFile$value)  == 0){
+  #print("RDML and Meta - 15")
 
-#print("RDML and Meta - 17")
+                #Process the data using the function process_Multiplexed_RDML
+                readInqPCRData$value <- process_Multiplexed_RDML(fdata)
 
-                #Combine the read in readInMetadata$value and readInqPCRData$value
-                totalMDMAPRDataFile$value <- combineReadInDataFiles(totalMDMAPRDataFile$value, readInMetadata$value, readInqPCRData$value)
+  #print("RDML and Meta - 16")
 
-#print("RDML and Meta - 18")
+                if (nrow(totalMDMAPRDataFile$value)  == 0){
 
-                #Run the calculation function
-                complete_calc()
+  #print("RDML and Meta - 17")
 
-#print("RDML and Meta - 19")
+                  #Combine the read in readInMetadata$value and readInqPCRData$value
+                  totalMDMAPRDataFile$value <- combineReadInDataFiles(totalMDMAPRDataFile$value, readInMetadata$value, readInqPCRData$value)
 
-              }else{
+  #print("RDML and Meta - 18")
 
-#print("RDML and Meta - 20")
+                  #Run the calculation function
+                  complete_calc()
 
-                shiny::showModal(dataPresentCheckModalBothData())
+  #print("RDML and Meta - 19")
 
-#print("RDML and Meta - 21")
+                }else{
 
-              }#Close off the else from to check if there was data already loaded
+  #print("RDML and Meta - 20")
 
-#print("RDML and Meta - 22")
+                  shiny::showModal(dataPresentCheckModalBothData())
 
-              output$data_present <- shiny::renderText({ as.character("Loaded Data" )})
+  #print("RDML and Meta - 21")
 
-#print("RDML and Meta - 23")
+                }#Close off the else from to check if there was data already loaded
+
+  #print("RDML and Meta - 22")
+
+                output$data_present <- shiny::renderText({ as.character("Loaded Data" )})
+
+  #print("RDML and Meta - 23")
+
+              } else if(RDMLLoadErrorFlag == 1){
+
+                shiny::removeModal()
+
+                shiny::showModal(shiny::modalDialog(
+                  title = "Incorrect RDML file format - Please inspect your file and try again.",
+                ))
+
+              }
 
             }#Close off the if to check if the data format of the metadata is correct
           },#Close off the try catch
@@ -2166,42 +2616,49 @@ built_unique_IDGlobalRDMLMeta6<<-built_unique_ID
 
 #print("Data Submit - 3")
 
-    #Set the initial filtered dataset to the uploaded data.
-    filtered$value <- totalMDMAPRDataFile$value
-    #Set qPCR Overview datasheet so that section is ready
-    filteredqPCRDataOverview$value <- totalMDMAPRDataFile$value
+    if(nrow(totalMDMAPRDataFile$value)>0){
 
-    #Set Standard Curve Analysis datasheet so that section is ready
-    filteredStdCurveAnalysis$value <- totalMDMAPRDataFile$value
-    # Remove any unk data as this needs to be opt or ntc data for standard curves
-    filteredStdCurveAnalysis$value <- filteredStdCurveAnalysis$value[filteredStdCurveAnalysis$value$resultSampleType != "unkn",,drop=FALSE]
+      #Set the initial filtered dataset to the uploaded data.
+      filtered$value <- totalMDMAPRDataFile$value
+      #Set qPCR Overview datasheet so that section is ready
+      filteredqPCRDataOverview$value <- totalMDMAPRDataFile$value
 
-    #Initially set the results for the mapping to the user supplied Cq
-    mappedValueVal$value <- "resultUserProvCq"
+      #Set Standard Curve Analysis datasheet so that section is ready
+      filteredStdCurveAnalysis$value <- totalMDMAPRDataFile$value
+      # Remove any unk data as this needs to be opt or ntc data for standard curves
+      filteredStdCurveAnalysis$value <- filteredStdCurveAnalysis$value[filteredStdCurveAnalysis$value$resultSampleType != "unkn",,drop=FALSE]
 
-#print("Data Submit - 4")
+      #Initially set the results for the mapping to the user supplied Cq
+      mappedValueVal$value <- "resultUserProvCq"
 
-    #Update different filters using the main dataframe
-    shinyWidgets::updatePickerInput(session, "projectID_input", choices = sort(unique(totalMDMAPRDataFile$value$projectID), na.last = TRUE), selected = unique(totalMDMAPRDataFile$value$projectID))
-    shinyWidgets::updatePickerInput(session, "machine_input", choices = sort(unique(totalMDMAPRDataFile$value$resultPlatform), na.last = TRUE), selected = unique(totalMDMAPRDataFile$value$resultPlatform))
-    shinyWidgets::updatePickerInput(session, "targetGene_input", choices = sort(unique(totalMDMAPRDataFile$value$assayGeneTarget), na.last = TRUE), selected = unique(totalMDMAPRDataFile$value$assayGeneTarget))
-    shiny::updateRadioButtons(session, "mappedValueButton", selected = mappedValueVal$value)
-    shiny::updateCheckboxInput(session, "mappedValIncludeEmpty", value = TRUE)
-    shinyWidgets::updatePickerInput(session, "assay_input", choices = sort(unique(totalMDMAPRDataFile$value$assayName), na.last = TRUE), selected = unique(totalMDMAPRDataFile$value$assayName))
-    shinyWidgets::updatePickerInput(session, "resultSampleType_input", choices = sort(unique(totalMDMAPRDataFile$value$resultSampleType), na.last = TRUE), selected = unique(totalMDMAPRDataFile$value$resultSampleType))
-    # Get all of the date entries of interest
-    cleaned_dates <- totalMDMAPRDataFile$value$replicateCollectionDate
-    # Remove empty strings and NA values
-    cleaned_dates <- cleaned_dates[cleaned_dates != "" & !is.na(cleaned_dates)]
-    # Convert to Date class
-    cleaned_dates <- as.Date(cleaned_dates)
-    shiny::updateSliderInput(session = session, inputId = "date_input", min = min(cleaned_dates), max = max(cleaned_dates), value=base::c(min(cleaned_dates),max(cleaned_dates)),step = 1)
-    shiny::updateCheckboxInput(session, "mappedDateIncludeEmpty", value = TRUE)
-    shinyWidgets::updatePickerInput(session, "genus_input", choices = sort(unique(totalMDMAPRDataFile$value$assayGenus), na.last = TRUE), selected = unique(totalMDMAPRDataFile$value$assayGenus))
-    shinyWidgets::updatePickerInput(session, "species_input", choices = sort(unique(totalMDMAPRDataFile$value$assaySpecies), na.last = TRUE), selected = unique(totalMDMAPRDataFile$value$assaySpecies))
+  #print("Data Submit - 4")
 
-print("End of the data submit")
-totalMDMAPRDataFileGlobalEndofDataSubmit<<-totalMDMAPRDataFile$value
+      #Update different filters using the main dataframe
+      shinyWidgets::updatePickerInput(session, "projectID_input", choices = sort(unique(totalMDMAPRDataFile$value$projectID), na.last = TRUE), selected = unique(totalMDMAPRDataFile$value$projectID))
+      shinyWidgets::updatePickerInput(session, "machine_input", choices = sort(unique(totalMDMAPRDataFile$value$resultPlatform), na.last = TRUE), selected = unique(totalMDMAPRDataFile$value$resultPlatform))
+      shinyWidgets::updatePickerInput(session, "targetGene_input", choices = sort(unique(totalMDMAPRDataFile$value$assayGeneTarget), na.last = TRUE), selected = unique(totalMDMAPRDataFile$value$assayGeneTarget))
+      shiny::updateRadioButtons(session, "mappedValueButton", selected = mappedValueVal$value)
+      shiny::updateCheckboxInput(session, "mappedValIncludeEmpty", value = TRUE)
+      shinyWidgets::updatePickerInput(session, "assay_input", choices = sort(unique(totalMDMAPRDataFile$value$assayName), na.last = TRUE), selected = unique(totalMDMAPRDataFile$value$assayName))
+      shinyWidgets::updatePickerInput(session, "resultSampleType_input", choices = sort(unique(totalMDMAPRDataFile$value$resultSampleType), na.last = TRUE), selected = unique(totalMDMAPRDataFile$value$resultSampleType))
+      # Get all of the date entries of interest
+      cleaned_dates <- totalMDMAPRDataFile$value$replicateCollectionDate
+      # Remove empty strings and NA values
+      cleaned_dates <- cleaned_dates[cleaned_dates != "" & !is.na(cleaned_dates)]
+      # Convert to Date class
+      cleaned_dates <- as.Date(cleaned_dates)
+      shiny::updateSliderInput(session = session, inputId = "date_input", min = min(cleaned_dates), max = max(cleaned_dates), value=base::c(min(cleaned_dates),max(cleaned_dates)),step = 1)
+      shiny::updateCheckboxInput(session, "mappedDateIncludeEmpty", value = TRUE)
+      shinyWidgets::updatePickerInput(session, "genus_input", choices = sort(unique(totalMDMAPRDataFile$value$assayGenus), na.last = TRUE), selected = unique(totalMDMAPRDataFile$value$assayGenus))
+      shinyWidgets::updatePickerInput(session, "species_input", choices = sort(unique(totalMDMAPRDataFile$value$assaySpecies), na.last = TRUE), selected = unique(totalMDMAPRDataFile$value$assaySpecies))
+
+    }
+
+# print("End of the data submit")
+# totalMDMAPRDataFileGlobalEndofDataSubmit<<-totalMDMAPRDataFile$value
+
+
+
   },ignoreInit = TRUE)# end of the observeEvent Input Submit
 
 ######################## Side menu observe events ##############################
@@ -2216,9 +2673,14 @@ totalMDMAPRDataFileGlobalEndofDataSubmit<<-totalMDMAPRDataFile$value
       }
     }else if(input$sidebarMenu == "qPCRDataOverviewPage"){
 
-      print("In the qPCR data overview page")
+      # print("In the qPCR data overview page")
+      #
+      # filteredqPCRDataOverviewGlobalqPCROverview <<-filteredqPCRDataOverview$value
 
-      filteredqPCRDataOverviewGlobalqPCROverview <<-filteredqPCRDataOverview$value
+
+
+
+
 
       #Populate the pickers
       updatePickerInput(session, "project_qPCROverview",
@@ -2918,7 +3380,7 @@ print("standardCurve_plot - 1 ")
 
   shiny::observeEvent(input$SCRemoveConfirm, {
 
-    removeModal()
+    shiny::removeModal()
 
     shiny::showModal(shiny::modalDialog(
       title = "Processing, please stand by...",
@@ -2927,8 +3389,13 @@ print("standardCurve_plot - 1 ")
     ))
 
 
-    SCRemoveValuesSCRemoveGLOBAL <<- SCRemoveValues$value
-    SCKeepValuesSCRemoveGLOBAL <<- SCKeepValues$value
+    # SCRemoveValuesSCRemoveGLOBAL <<- SCRemoveValues$value
+    # SCKeepValuesSCRemoveGLOBAL <<- SCKeepValues$value
+
+
+
+
+
 
     ############# First remove the values to remove ########################
     # Find rows in df1 that are also in df2
@@ -2999,7 +3466,15 @@ print("standardCurve_plot - 1 ")
 
     #Finally after removing the values to keep add the updated values back onto the totalMDMAPRDataFile$value
     totalMDMAPRDataFile$value <- rbind(totalMDMAPRDataFile$value, SCKeepValues$value)
-    totalMDMAPRDataFileSCReplace <<- totalMDMAPRDataFile$value
+
+
+
+
+    # totalMDMAPRDataFileSCReplace <<- totalMDMAPRDataFile$value
+
+
+
+
 
     #Using the filtered options already set and running the function with the new
     # contents of the totalMDMAPRDataFile
@@ -3021,13 +3496,13 @@ print("standardCurve_plot - 1 ")
     #Clear the plot
     output$standardCurve_plot <- NULL
 
-    removeModal()
+    shiny::removeModal()
 
   })
 
   shiny::observeEvent(input$SCRemoveCancel, {
 
-    removeModal()
+    shiny::removeModal()
 
   })
 

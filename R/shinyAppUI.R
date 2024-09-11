@@ -43,7 +43,7 @@ shinyAppUI <- shinydashboard::dashboardPage(
           collapsed = TRUE,
           width = 12,
           shiny::p("To learn how to fill in the MDMAPR 2.0 Metadata Template please visit the ",
-                   shiny::tags$a(href="https://github.com/AlkaBenawra/MDMAPR", "MDMAPR 2.0 GitHub page."),  "The wiki page contains instructions on how to fill in the Metadata template excel file and has a complete guide with descriptions for each field in the metadata template.",  style = "font-size:16px;" ),
+                   shiny::tags$a(href="https://github.com/rgyoung6/MDMAPR2.0", "MDMAPR 2.0 GitHub page."),  "The wiki page contains instructions on how to fill in the Metadata template excel file and has a complete guide with descriptions for each field in the metadata template.",  style = "font-size:16px;" ),
           shiny::downloadLink("downloadTemplate",
                               shiny::p("Click Here to Download the Metadata Template",
                                        style = "font-size:16px; color:#F4412E; text-decoration: underline;")
